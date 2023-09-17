@@ -5,9 +5,13 @@ using UnityEngine.Networking;
 
 public class DataManager
 {
+
+
+    const string URL = "https://docs.google.com/spreadsheets/d/15rqyXR509ffPJByFT7KADlavB6cqdq79Uip5MvbCvjE/export?format=tsv";
+    //const string URL = "https://docs.google.com/spreadsheets/d/1z5x8Ol7WWCubrKzerE8H5B764nCcvC46/export?format=tsv";
     public IEnumerator CoDownloadDataSheet()
     {
-        UnityWebRequest www = UnityWebRequest.Get(Managers.URL.ExcelURL);
+        UnityWebRequest www = UnityWebRequest.Get(URL);
         yield return www.SendWebRequest();
 
         string data = www.downloadHandler.text;

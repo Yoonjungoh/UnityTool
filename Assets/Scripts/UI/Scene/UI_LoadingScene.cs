@@ -30,7 +30,7 @@ public class UI_LoadingScene : UI_Scene
     }
     private static UI_LoadingScene CreateLoadingScene()
     {
-        return Managers.Resource.Instantiate("UI/Scene/UI_LoadingScene").GetComponent<UI_LoadingScene>();
+        return Managers.Resource.Instantiate("LoadingScene").GetComponent<UI_LoadingScene>();
     }
     void Awake()
     {
