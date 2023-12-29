@@ -15,7 +15,6 @@ public abstract class UI_Base : MonoBehaviour
 	{
 		Init();
 	}
-
 	protected void Bind<T>(Type type) where T : UnityEngine.Object
 	{
 		string[] names = Enum.GetNames(type);
@@ -33,7 +32,6 @@ public abstract class UI_Base : MonoBehaviour
 				Debug.Log($"Failed to bind({names[i]})");
 		}
 	}
-
 	protected T Get<T>(int idx) where T : UnityEngine.Object
 	{
 		UnityEngine.Object[] objects = null;
@@ -45,14 +43,12 @@ public abstract class UI_Base : MonoBehaviour
 
 		return objects[idx] as T;
 	}
-
 	protected GameObject GetObject(int idx) { return Get<GameObject>(idx); }
 	protected Text GetText(int idx) { return Get<Text>(idx); }
 	protected Button GetButton(int idx) { return Get<Button>(idx); }
 	protected Image GetImage(int idx) { return Get<Image>(idx); }
 	protected TextMeshProUGUI GetTextMeshProUGUI(int idx) { return Get<TextMeshProUGUI>(idx); }
 	protected Slider GetSlider(int idx) { return Get<Slider>(idx); }
-
 	public static void BindEvent(GameObject go, Action<PointerEventData> action, Define.UIEvent type = Define.UIEvent.Click)
 	{
 		UI_EventHandler evt = Util.GetOrAddComponent<UI_EventHandler>(go);
