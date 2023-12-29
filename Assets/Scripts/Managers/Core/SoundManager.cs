@@ -40,6 +40,16 @@ public class SoundManager
         }
         _audioClips.Clear();
     }
+    public void ChangeBGM()
+    {
+        switch (Managers.Scene.CurrentScene)
+        {
+            case Define.Scene.StartMenu:
+                break;
+            case Define.Scene.Game:
+                break;
+        }
+    }
 
     public void Play(string path, Define.Sound type = Define.Sound.Effect, float pitch = 1.0f)
     {

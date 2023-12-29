@@ -14,6 +14,7 @@ public class SceneManagerEx
             if (_currentScene == value)
                 return;
             _currentScene = value;
+            Managers.Sound.ChangeBGM();
         }
     }
     public void LoadScene(Define.Scene type)
