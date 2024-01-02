@@ -105,10 +105,8 @@ public class ResourceManager
             if (index >= 0)
                 name = name.Substring(index + 1);
         }
-
         return Resources.Load<T>($"Prefabs/{path}");
     }
-
     public GameObject Instantiate(string path, Transform parent = null)
     {
         GameObject original = Load<GameObject>(path);
@@ -122,7 +120,6 @@ public class ResourceManager
         go.name = original.name;
         return go;
     }
-
     public void Destroy(GameObject go, float time = 0.0f)
     {
         Object.Destroy(go, time);

@@ -37,10 +37,9 @@ public abstract class UI_Base : MonoBehaviour
 		UnityEngine.Object[] objects = null;
 		if (_objects.TryGetValue(typeof(T), out objects) == false)
 		{
-			Debug.Log($"There is no UI");
+			Debug.Log($"There is no UI Type: {typeof(T)}");
 			return null;
 		}
-
 		return objects[idx] as T;
 	}
 	protected GameObject GetObject(int idx) { return Get<GameObject>(idx); }

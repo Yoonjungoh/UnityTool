@@ -27,7 +27,6 @@ public class SceneManagerEx
     {
         UI_LoadingScene.Instance.LoadScene(sceneName);
     }
-
     string GetSceneName(Define.Scene type)
     {
         string name = System.Enum.GetName(typeof(Define.Scene), type);
