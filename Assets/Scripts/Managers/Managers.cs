@@ -50,7 +50,7 @@ public class Managers : MonoBehaviour
     public static void Clear()
     {
         Sound.Clear();
-        Scene.Clear();
+        //Scene.Clear();
         UI.Clear();
     }
     public IEnumerator CoDataManagerInit()
