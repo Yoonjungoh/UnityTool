@@ -31,7 +31,7 @@ public class SceneManagerEx
         if (Enum.TryParse(sceneName, out sceneEnumValue))
         {
             UI_LoadingScene.Instance.LoadScene(sceneName);
-            Debug.Log($"Load {sceneName} Scene");
+            Debug.Log($"Loading {sceneName} Scene");
         }
         else
         {

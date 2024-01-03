@@ -36,5 +36,6 @@ public class UI_Test : UI_Scene
     {
         _score++;
         _testText.text = _score.ToString();
+        Managers.Scene.LoadScene("Login");
     }
 }
