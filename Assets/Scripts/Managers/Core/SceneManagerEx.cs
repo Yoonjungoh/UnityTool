@@ -30,19 +30,6 @@ public class SceneManagerEx
 
         if (Enum.TryParse(sceneName, out sceneEnumValue))
         {
-            switch (sceneEnumValue)
-            {
-                case Define.Scene.Login:
-                    break;
-                case Define.Scene.Lobby:
-                    break;
-                case Define.Scene.Game:
-                    break;
-                case Define.Scene.StartMenu:
-                    break;
-                default:
-                    break;
-            }
             UI_LoadingScene.Instance.LoadScene(sceneName);
             Debug.Log($"Load {sceneName} Scene");
         }
