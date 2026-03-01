@@ -6,7 +6,6 @@ using UnityEngine.UI;
 
 public class UI_Test : UI_Scene
 {
-    // UI 자동화 사용 예제 컴포넌트
     Button _testButton;
     TextMeshProUGUI _testText;
     int _score = 0;
@@ -35,7 +34,7 @@ public class UI_Test : UI_Scene
     void AddScore()
     {
         _score++;
-        _testText.text = _score.ToString();
-        Managers.Scene.LoadScene("Login");
+        _testText.text = Managers.SpecData.GetCurrency(1).CurrencyType.ToString();
+        // Managers.Scene.LoadScene("Login");
     }
 }

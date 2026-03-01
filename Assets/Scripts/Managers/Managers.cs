@@ -6,32 +6,34 @@ public class Managers : MonoBehaviour
 {
     static Managers s_instance;
     static Managers Instance { get { Init(); return s_instance; } }
-    DataManager _data = new DataManager();
+
+    DataManager     _data     = new DataManager();
     ResourceManager _resource = new ResourceManager();
-    SceneManagerEx _scene = new SceneManagerEx();
-    SoundManager _sound = new SoundManager();
-    UIManager _ui = new UIManager();
-    URLManager _url = new URLManager();
+    SceneManagerEx  _scene    = new SceneManagerEx();
+    SoundManager    _sound    = new SoundManager();
+    SpecDataManager _specData = new SpecDataManager();
+    UIManager       _ui       = new UIManager();
+    URLManager      _url      = new URLManager();
 
-    public static DataManager Data { get { return Instance._data; } }
+    public static DataManager     Data     { get { return Instance._data;     } }
     public static ResourceManager Resource { get { return Instance._resource; } }
-    public static SceneManagerEx Scene { get { return Instance._scene; } }
-    public static SoundManager Sound { get { return Instance._sound; } }
-    public static UIManager UI { get { return Instance._ui; } }
-    public static URLManager URL { get { return Instance._url; } }
+    public static SceneManagerEx  Scene    { get { return Instance._scene;    } }
+    public static SoundManager    Sound    { get { return Instance._sound;    } }
+    public static SpecDataManager SpecData { get { return Instance._specData; } }
+    public static UIManager       UI       { get { return Instance._ui;       } }
+    public static URLManager      URL      { get { return Instance._url;      } }
 
-	void Start()
+    void Start()
     {
         Init();
-        // 주석 해제하면 서버에서 Data 정보 가져옴
-        StartCoroutine(CoDataManagerInit());
+        StartCoroutine(CoSpecDataManagerInit());
     }
 
     static void Init()
     {
         if (s_instance == null)
         {
-			GameObject go = GameObject.Find("@Managers");
+            GameObject go = GameObject.Find("@Managers");
             if (go == null)
             {
                 go = new GameObject { name = "@Managers" };
@@ -41,23 +43,38 @@ public class Managers : MonoBehaviour
             DontDestroyOnLoad(go);
             s_instance = go.GetComponent<Managers>();
 
-            //s_instance._data.Init();
             s_instance._sound.Init();
             s_instance._resource.Init();
-        }		
-	}
+        }
+    }
 
     public static void Clear()
     {
         Sound.Clear();
-        //Scene.Clear();
         UI.Clear();
     }
-    public IEnumerator CoDataManagerInit()
-    {
-        // 추가될 json 데이터들 가져오는 코루틴 넣어주기
-        StartCoroutine(Managers.Data.CoDownloadDataSheet());
 
-        yield return null;
+    // ══════════════════════════════════════════════════════════
+    // SpecData 초기화 코루틴
+    // ══════════════════════════════════════════════════════════
+    public IEnumerator CoSpecDataManagerInit()
+    {
+        // CoDownloadDataSheet()를 yield return으로 완료까지 대기
+        // → 이 코루틴이 끝난 시점에 SpecData.IsReady == true 보장
+        yield return StartCoroutine(SpecData.CoDownloadDataSheet());
+
+        // SpecData 로드 완료 후 처리
+        OnSpecDataReady();
+    }
+
+    void OnSpecDataReady()
+    {
+        Debug.Log("[Managers] SpecData 준비 완료. 게임 시작 가능.");
+
+        // 예시: 첫 씬 로드
+        // Scene.LoadScene(Define.Scene.Game);
+
+        // 예시: 로딩 UI 종료
+        // UI.ClosePopupUI<UI_Loading>();
     }
 }
