@@ -12,6 +12,7 @@ public class Managers : MonoBehaviour
     SceneManagerEx _scene = new SceneManagerEx();
     SoundManager _sound = new SoundManager();
     SpecDataManager _specData = new SpecDataManager();
+    ConfigManager _config = new ConfigManager();
     UIManager _ui = new UIManager();
     URLManager _url = new URLManager();
 
@@ -20,16 +21,17 @@ public class Managers : MonoBehaviour
     public static SceneManagerEx Scene { get { return Instance._scene; } }
     public static SoundManager Sound { get { return Instance._sound; } }
     public static SpecDataManager SpecData { get { return Instance._specData; } }
+    public static ConfigManager Config { get { return Instance._config; } }
     public static UIManager UI { get { return Instance._ui; } }
     public static URLManager URL { get { return Instance._url; } }
 
-    void Start()
+    private void Start()
     {
         Init();
-        StartCoroutine(CoSpecDataManagerInit());
+        StartCoroutine(CoInit());
     }
 
-    static void Init()
+    public static void Init()
     {
         if (s_instance == null)
         {
@@ -55,26 +57,25 @@ public class Managers : MonoBehaviour
     }
 
     // ══════════════════════════════════════════════════════════
-    // SpecData 초기화 코루틴
+    // 전체 데이터 초기화 코루틴 (SpecData → Config 순차 실행)
     // ══════════════════════════════════════════════════════════
-    public IEnumerator CoSpecDataManagerInit()
+    public IEnumerator CoInit()
     {
-        // CoDownloadDataSheet()를 yield return으로 완료까지 대기
-        // → 이 코루틴이 끝난 시점에 SpecData.IsReady == true 보장
         yield return StartCoroutine(SpecData.CoDownloadDataSheet());
+        yield return StartCoroutine(Config.CoDownloadConfig());
 
-        // SpecData 로드 완료 후 처리
-        OnSpecDataReady();
+        OnAllDataReady();
     }
 
-    void OnSpecDataReady()
+    public static bool IsDataReady { get; private set; }
+
+    void OnAllDataReady()
     {
-        Debug.Log("[Managers] SpecData 준비 완료. 게임 시작 가능.");
+        IsDataReady = true;
+        Debug.Log("[Managers] 모든 데이터 준비 완료. 게임 시작 가능.");
 
-        // 예시: 첫 씬 로드
-        // Scene.LoadScene(Define.Scene.Game);
-
-        // 예시: 로딩 UI 종료
-        // UI.ClosePopupUI<UI_Loading>();
+        // TODO - 데이터 로딩 끝나고 다른 씬으로 전환하기
+        // 아래는 강제로 데이터 확인하는 테스트 코드
+        Managers.UI.ShowSceneUI<UI_Test>();
     }
 }

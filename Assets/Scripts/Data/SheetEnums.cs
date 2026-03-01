@@ -18,3 +18,12 @@ public enum MonsterType
     Bear,
 }
 
+public enum ConfigType
+{
+    None = 0,
+    EventDay,
+    JumpDelay,
+    StartWord,
+    TestWord,
+}
+

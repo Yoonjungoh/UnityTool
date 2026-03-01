@@ -17,10 +17,7 @@ public class UI_Test : UI_Scene
     {
         TestText,
     }
-    void Start()
-    {
-        Init();
-    }
+
     public override void Init()
     {
         base.Init();
@@ -29,12 +26,13 @@ public class UI_Test : UI_Scene
         _testButton = GetButton((int)Buttons.TestButton);
         _testText = GetTextMeshProUGUI((int)Texts.TestText);
         _testButton.onClick.AddListener(AddScore);
-        _testText.text = _score.ToString();
+        _testText.text = Managers.SpecData.GetCurrency(1).CurrencyType.ToString();
     }
+
     void AddScore()
     {
         _score++;
-        _testText.text = Managers.SpecData.GetCurrency(1).CurrencyType.ToString();
+        _testText.text = Managers.Config.GetString(ConfigType.TestWord);
         // Managers.Scene.LoadScene("Login");
     }
 }

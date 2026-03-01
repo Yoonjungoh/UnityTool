@@ -371,6 +371,8 @@ public class GoogleSheetCodeGenerator : EditorWindow
         // GenerateSOFiles();   // SO는 잘 안 써서 주석 처리 (필요 시 활성화)
         GenerateSheetConfig();
         GenerateSpecDataManager();
+        if (_results.ContainsKey("Config"))
+            GenerateConfigManager();
 
         AssetDatabase.Refresh();
 
@@ -379,15 +381,18 @@ public class GoogleSheetCodeGenerator : EditorWindow
         Log("");
         Log("[ 런타임 흐름 ]");
         Log("  Managers.Start()");
-        Log("    → CoSpecDataManagerInit()");
+        Log("    → CoInit()");
         Log("      → SpecData.CoDownloadDataSheet()");
         foreach (var name in _results.Keys)
-            Log($"        → CoFetch_{name}()");
-        Log("      → IsReady = true");
+            if (name != "Config") Log($"        → CoFetch_{name}()");
+        Log("      → Config.CoDownloadConfig()");
         Log("");
         Log("[ 사용 예시 ]");
         foreach (var name in _results.Keys)
-            Log($"  Managers.SpecData.Get{name}(id)");
+            if (name != "Config") Log($"  Managers.SpecData.Get{name}(id)");
+        Log("  Managers.Config.GetInt(ConfigType.xxx)");
+        Log("  Managers.Config.GetFloat(ConfigType.xxx)");
+        Log("  Managers.Config.GetAuto(ConfigType.xxx)");
         Repaint();
     }
 
@@ -448,6 +453,7 @@ public class GoogleSheetCodeGenerator : EditorWindow
 
         foreach (var kv in _results)
         {
+            if (kv.Key == "Config") continue; // Config는 MetaData 클래스 불필요
             string name = kv.Value.SheetName;
             sb.AppendLine();
             sb.AppendLine($"// ── {name} ─────────────────────────────────────────");
@@ -549,6 +555,7 @@ public class GoogleSheetCodeGenerator : EditorWindow
 
         foreach (var name in _results.Keys)
         {
+            if (name == "Config") continue; // Config는 ConfigManager에서 별도 관리
             sb.AppendLine($"    Dictionary<int, {name}MetaData> _{LowerFirst(name)}Dict = new Dictionary<int, {name}MetaData>();");
             sb.AppendLine($"    List<{name}MetaData>            _{LowerFirst(name)}List = new List<{name}MetaData>();");
         }
@@ -560,7 +567,7 @@ public class GoogleSheetCodeGenerator : EditorWindow
         sb.AppendLine("        Debug.Log(\"[SpecDataManager] 데이터 다운로드 시작\");");
         sb.AppendLine();
         foreach (var name in _results.Keys)
-            sb.AppendLine($"        yield return CoFetch_{name}();");
+            if (name != "Config") sb.AppendLine($"        yield return CoFetch_{name}();");
         sb.AppendLine();
         sb.AppendLine("        IsReady = true;");
         sb.AppendLine("        Debug.Log(\"[SpecDataManager] 모든 데이터 로드 완료\");");
@@ -569,6 +576,7 @@ public class GoogleSheetCodeGenerator : EditorWindow
 
         foreach (var kv in _results)
         {
+            if (kv.Key == "Config") continue; // Config는 ConfigManager에서 별도 관리
             string name = kv.Value.SheetName;
             var    cols = kv.Value.Columns;
 
@@ -620,6 +628,7 @@ public class GoogleSheetCodeGenerator : EditorWindow
 
         foreach (var name in _results.Keys)
         {
+            if (name == "Config") continue; // Config는 ConfigManager에서 별도 관리
             sb.AppendLine($"    public {name}MetaData Get{name}(int id)");
             sb.AppendLine("    {");
             sb.AppendLine($"        {name}MetaData result;");
@@ -654,6 +663,165 @@ public class GoogleSheetCodeGenerator : EditorWindow
         sb.AppendLine("}");
 
         WriteFile(OUTPUT_MANAGER_PATH + "SpecDataManager.cs", sb.ToString());
+    }
+
+    // ──────────────────────────────────────────
+    // 6. ConfigManager.cs  (Config 시트 전용)
+    // ──────────────────────────────────────────
+    private void GenerateConfigManager()
+    {
+        if (!_results.TryGetValue("Config", out SheetParseResult cfg)) return;
+
+        // 컬럼 인덱스를 이름으로 찾아 생성 코드에 주입
+        int idIdx = 0, dataTypeIdx = 1, configTypeIdx = 2, valueIdx = 3;
+        for (int i = 0; i < cfg.Columns.Count; i++)
+        {
+            switch (cfg.Columns[i].FieldName)
+            {
+                case "Id":         idIdx         = cfg.Columns[i].ColIndex; break;
+                case "DataType":   dataTypeIdx   = cfg.Columns[i].ColIndex; break;
+                case "ConfigType": configTypeIdx = cfg.Columns[i].ColIndex; break;
+                case "Value":      valueIdx      = cfg.Columns[i].ColIndex; break;
+            }
+        }
+
+        int colCount = cfg.Columns.Count;
+
+        var sb = new StringBuilder();
+        AppendFileHeader(sb);
+        sb.AppendLine("using System;");
+        sb.AppendLine("using System.Collections;");
+        sb.AppendLine("using System.Collections.Generic;");
+        sb.AppendLine("using UnityEngine;");
+        sb.AppendLine("using UnityEngine.Networking;");
+        sb.AppendLine();
+        sb.AppendLine("/// <summary>");
+        sb.AppendLine("/// Config 시트 런타임 로더.");
+        sb.AppendLine("/// DataType 컬럼 기반으로 타입 안전한 조회 API를 제공합니다.");
+        sb.AppendLine("///");
+        sb.AppendLine("/// 사용 예시:");
+        sb.AppendLine("///   Managers.Config.GetInt(ConfigType.EventDay)    → 3");
+        sb.AppendLine("///   Managers.Config.GetFloat(ConfigType.JumpDelay) → 3.5f");
+        sb.AppendLine("///   Managers.Config.GetAuto(ConfigType.EventDay)   → (object)3");
+        sb.AppendLine("/// </summary>");
+        sb.AppendLine("public class ConfigManager");
+        sb.AppendLine("{");
+        sb.AppendLine("    public bool IsReady { get; private set; }");
+        sb.AppendLine();
+        sb.AppendLine("    struct ConfigEntry { public string DataType; public string Value; }");
+        sb.AppendLine();
+        sb.AppendLine("    readonly Dictionary<ConfigType, ConfigEntry> _dict =");
+        sb.AppendLine("        new Dictionary<ConfigType, ConfigEntry>();");
+        sb.AppendLine();
+        sb.AppendLine("    public IEnumerator CoDownloadConfig()");
+        sb.AppendLine("    {");
+        sb.AppendLine("        IsReady = false;");
+        sb.AppendLine("        Debug.Log(\"[ConfigManager] Config 다운로드 시작\");");
+        sb.AppendLine();
+        sb.AppendLine("        string url = GoogleSheetConfig.BuildJsonUrl(\"Config\");");
+        sb.AppendLine("        using (UnityWebRequest req = UnityWebRequest.Get(url))");
+        sb.AppendLine("        {");
+        sb.AppendLine("            yield return req.SendWebRequest();");
+        sb.AppendLine("            if (req.result != UnityWebRequest.Result.Success)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                Debug.LogError(\"[ConfigManager] Config 다운로드 실패: \" + req.error);");
+        sb.AppendLine("                IsReady = true;");
+        sb.AppendLine("                yield break;");
+        sb.AppendLine("            }");
+        sb.AppendLine();
+        sb.AppendLine("            _dict.Clear();");
+        sb.AppendLine($"            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: {colCount});");
+        sb.AppendLine("            for (int i = 2; i < rows.Count; i++)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                string[] cells = rows[i];");
+        sb.AppendLine($"                if (string.IsNullOrEmpty(cells[{idIdx}])) continue;");
+        sb.AppendLine("                try");
+        sb.AppendLine("                {");
+        sb.AppendLine($"                    string dataType  = cells[{dataTypeIdx}];");
+        sb.AppendLine($"                    string configKey = cells[{configTypeIdx}];");
+        sb.AppendLine($"                    string value     = cells[{valueIdx}];");
+        sb.AppendLine("                    if (!Enum.TryParse(configKey, true, out ConfigType key)) continue;");
+        sb.AppendLine("                    _dict[key] = new ConfigEntry { DataType = dataType, Value = value };");
+        sb.AppendLine("                }");
+        sb.AppendLine("                catch (Exception e)");
+        sb.AppendLine("                {");
+        sb.AppendLine("                    Debug.LogWarning(\"[ConfigManager] 파싱 오류 row\" + i + \": \" + e.Message);");
+        sb.AppendLine("                }");
+        sb.AppendLine("            }");
+        sb.AppendLine();
+        sb.AppendLine("            Debug.Log(\"[ConfigManager] Config 로드 완료: \" + _dict.Count + \"개\");");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        sb.AppendLine("        IsReady = true;");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine("    public int GetInt(ConfigType key)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        string s = GetRaw(key);");
+        sb.AppendLine("        if (string.IsNullOrEmpty(s)) return 0;");
+        sb.AppendLine("        if (s.Contains(\".\"))");
+        sb.AppendLine("            return (int)float.Parse(s, System.Globalization.CultureInfo.InvariantCulture);");
+        sb.AppendLine("        return int.Parse(s);");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine("    public float GetFloat(ConfigType key)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        string s = GetRaw(key);");
+        sb.AppendLine("        if (string.IsNullOrEmpty(s)) return 0f;");
+        sb.AppendLine("        return float.Parse(s, System.Globalization.CultureInfo.InvariantCulture);");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine("    public string GetString(ConfigType key) => GetRaw(key);");
+        sb.AppendLine();
+        sb.AppendLine("    public bool GetBool(ConfigType key)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        string s = GetRaw(key);");
+        sb.AppendLine("        return s == \"true\" || s == \"1\" || s == \"yes\";");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine("    public long GetLong(ConfigType key)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        string s = GetRaw(key);");
+        sb.AppendLine("        if (string.IsNullOrEmpty(s)) return 0L;");
+        sb.AppendLine("        if (s.Contains(\".\"))");
+        sb.AppendLine("            return (long)double.Parse(s, System.Globalization.CultureInfo.InvariantCulture);");
+        sb.AppendLine("        return long.Parse(s);");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine("    public double GetDouble(ConfigType key)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        string s = GetRaw(key);");
+        sb.AppendLine("        if (string.IsNullOrEmpty(s)) return 0.0;");
+        sb.AppendLine("        return double.Parse(s, System.Globalization.CultureInfo.InvariantCulture);");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine("    public decimal GetDecimal(ConfigType key)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        string s = GetRaw(key);");
+        sb.AppendLine("        if (string.IsNullOrEmpty(s)) return 0m;");
+        sb.AppendLine("        return decimal.Parse(s, System.Globalization.CultureInfo.InvariantCulture);");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine("    /// <summary>DataType 컬럼 기반으로 자동 파싱하여 반환합니다.</summary>");
+        sb.AppendLine("    public object GetAuto(ConfigType key)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        if (!_dict.TryGetValue(key, out ConfigEntry entry)) return null;");
+        sb.AppendLine("        switch (entry.DataType)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            case \"int\":    return GetInt(key);");
+        sb.AppendLine("            case \"float\":  return GetFloat(key);");
+        sb.AppendLine("            case \"bool\":   return GetBool(key);");
+        sb.AppendLine("            case \"long\":   return GetLong(key);");
+        sb.AppendLine("            case \"double\": return GetDouble(key);");
+        sb.AppendLine("            default:       return GetString(key);");
+        sb.AppendLine("        }");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine("    string GetRaw(ConfigType key) =>");
+        sb.AppendLine("        _dict.TryGetValue(key, out ConfigEntry e) ? e.Value : string.Empty;");
+        sb.AppendLine("}");
+
+        WriteFile(OUTPUT_MANAGER_PATH + "ConfigManager.cs", sb.ToString());
     }
 
     // ──────────────────────────────────────────

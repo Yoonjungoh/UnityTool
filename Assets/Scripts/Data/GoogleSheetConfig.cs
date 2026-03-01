@@ -17,6 +17,7 @@ public static class GoogleSheetConfig
     {
         "Currency",
         "Monster",
+        "Config",
     };
 
     /// <summary>
