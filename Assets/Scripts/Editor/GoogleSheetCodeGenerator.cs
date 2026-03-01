@@ -363,12 +363,12 @@ public class GoogleSheetCodeGenerator : EditorWindow
         Log("\n=== 코드 생성 시작 ===");
 
         EnsureDir(OUTPUT_DATA_PATH);
-        EnsureDir(OUTPUT_SO_PATH);
+        // EnsureDir(OUTPUT_SO_PATH); // SO는 잘 안 써서 주석 처리 (필요 시 활성화)
         EnsureDir(OUTPUT_MANAGER_PATH);
 
         GenerateEnumFile();
         GenerateMetaDataFile();
-        GenerateSOFiles();
+        // GenerateSOFiles();   // SO는 잘 안 써서 주석 처리 (필요 시 활성화)
         GenerateSheetConfig();
         GenerateSpecDataManager();
 
