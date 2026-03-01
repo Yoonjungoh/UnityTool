@@ -553,11 +553,15 @@ public class GoogleSheetCodeGenerator : EditorWindow
         sb.AppendLine("    public bool IsReady { get; private set; }");
         sb.AppendLine();
 
-        foreach (var name in _results.Keys)
+        foreach (var kv in _results)
         {
-            if (name == "Config") continue; // Config는 ConfigManager에서 별도 관리
-            sb.AppendLine($"    Dictionary<int, {name}MetaData> _{LowerFirst(name)}Dict = new Dictionary<int, {name}MetaData>();");
-            sb.AppendLine($"    List<{name}MetaData>            _{LowerFirst(name)}List = new List<{name}MetaData>();");
+            if (kv.Key == "Config") continue; // Config는 ConfigManager에서 별도 관리
+            string n = kv.Value.SheetName;
+            sb.AppendLine($"    Dictionary<int, {n}MetaData> _{LowerFirst(n)}Dict = new Dictionary<int, {n}MetaData>();");
+            sb.AppendLine($"    List<{n}MetaData>            _{LowerFirst(n)}List = new List<{n}MetaData>();");
+            var eCol = kv.Value.Columns.Find(c => c.TypeHint == "enum");
+            if (eCol != null)
+                sb.AppendLine($"    Dictionary<{eCol.FieldName}, {n}MetaData> _{LowerFirst(n)}ByTypeDict = new Dictionary<{eCol.FieldName}, {n}MetaData>();");
         }
         sb.AppendLine();
 
@@ -577,8 +581,9 @@ public class GoogleSheetCodeGenerator : EditorWindow
         foreach (var kv in _results)
         {
             if (kv.Key == "Config") continue; // Config는 ConfigManager에서 별도 관리
-            string name = kv.Value.SheetName;
-            var    cols = kv.Value.Columns;
+            string name    = kv.Value.SheetName;
+            var    cols    = kv.Value.Columns;
+            var    enumCol = cols.Find(c => c.TypeHint == "enum");
 
             sb.AppendLine($"    IEnumerator CoFetch_{name}()");
             sb.AppendLine("    {");
@@ -594,6 +599,8 @@ public class GoogleSheetCodeGenerator : EditorWindow
             sb.AppendLine();
             sb.AppendLine($"            _{LowerFirst(name)}Dict.Clear();");
             sb.AppendLine($"            _{LowerFirst(name)}List.Clear();");
+            if (enumCol != null)
+                sb.AppendLine($"            _{LowerFirst(name)}ByTypeDict.Clear();");
             sb.AppendLine();
             sb.AppendLine($"            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: {cols.Count});");
             sb.AppendLine("            for (int i = 2; i < rows.Count; i++)");
@@ -613,6 +620,8 @@ public class GoogleSheetCodeGenerator : EditorWindow
             sb.AppendLine("                    };");
             sb.AppendLine($"                    _{LowerFirst(name)}Dict[data.Id] = data;");
             sb.AppendLine($"                    _{LowerFirst(name)}List.Add(data);");
+            if (enumCol != null)
+                sb.AppendLine($"                    _{LowerFirst(name)}ByTypeDict[data.{enumCol.FieldName}] = data;");
             sb.AppendLine("                }");
             sb.AppendLine("                catch (Exception e)");
             sb.AppendLine("                {");
@@ -626,9 +635,11 @@ public class GoogleSheetCodeGenerator : EditorWindow
             sb.AppendLine();
         }
 
-        foreach (var name in _results.Keys)
+        foreach (var kv in _results)
         {
-            if (name == "Config") continue; // Config는 ConfigManager에서 별도 관리
+            if (kv.Key == "Config") continue; // Config는 ConfigManager에서 별도 관리
+            string name    = kv.Value.SheetName;
+            var    enumCol = kv.Value.Columns.Find(c => c.TypeHint == "enum");
             sb.AppendLine($"    public {name}MetaData Get{name}(int id)");
             sb.AppendLine("    {");
             sb.AppendLine($"        {name}MetaData result;");
@@ -636,6 +647,16 @@ public class GoogleSheetCodeGenerator : EditorWindow
             sb.AppendLine("        return result;");
             sb.AppendLine("    }");
             sb.AppendLine();
+            if (enumCol != null)
+            {
+                sb.AppendLine($"    public {name}MetaData Get{name}({enumCol.FieldName} key)");
+                sb.AppendLine("    {");
+                sb.AppendLine($"        {name}MetaData result;");
+                sb.AppendLine($"        _{LowerFirst(name)}ByTypeDict.TryGetValue(key, out result);");
+                sb.AppendLine("        return result;");
+                sb.AppendLine("    }");
+                sb.AppendLine();
+            }
             sb.AppendLine($"    public List<{name}MetaData> GetAll{name}()");
             sb.AppendLine("    {");
             sb.AppendLine($"        return _{LowerFirst(name)}List;");

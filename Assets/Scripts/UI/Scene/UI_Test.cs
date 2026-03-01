@@ -26,7 +26,8 @@ public class UI_Test : UI_Scene
         _testButton = GetButton((int)Buttons.TestButton);
         _testText = GetTextMeshProUGUI((int)Texts.TestText);
         _testButton.onClick.AddListener(AddScore);
-        _testText.text = Managers.SpecData.GetCurrency(1).CurrencyType.ToString();
+        // _testText.text = Managers.SpecData.GetCurrency(1).CurrencyType.ToString();
+        _testText.text = Managers.SpecData.GetMonster(MonsterType.Bear).MonsterType.ToString();
     }
 
     void AddScore()

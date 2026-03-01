@@ -16,10 +16,12 @@ public class SpecDataManager
 {
     public bool IsReady { get; private set; }
 
-    Dictionary<int, CurrencyMetaData> _currencyDict = new Dictionary<int, CurrencyMetaData>();
-    List<CurrencyMetaData>            _currencyList = new List<CurrencyMetaData>();
-    Dictionary<int, MonsterMetaData> _monsterDict = new Dictionary<int, MonsterMetaData>();
-    List<MonsterMetaData>            _monsterList = new List<MonsterMetaData>();
+    Dictionary<int, CurrencyMetaData>          _currencyDict       = new Dictionary<int, CurrencyMetaData>();
+    List<CurrencyMetaData>                     _currencyList       = new List<CurrencyMetaData>();
+    Dictionary<CurrencyType, CurrencyMetaData> _currencyByTypeDict = new Dictionary<CurrencyType, CurrencyMetaData>();
+    Dictionary<int, MonsterMetaData>           _monsterDict        = new Dictionary<int, MonsterMetaData>();
+    List<MonsterMetaData>                      _monsterList        = new List<MonsterMetaData>();
+    Dictionary<MonsterType, MonsterMetaData>   _monsterByTypeDict  = new Dictionary<MonsterType, MonsterMetaData>();
 
     public IEnumerator CoDownloadDataSheet()
     {
@@ -47,6 +49,7 @@ public class SpecDataManager
 
             _currencyDict.Clear();
             _currencyList.Clear();
+            _currencyByTypeDict.Clear();
 
             List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 2);
             for (int i = 2; i < rows.Count; i++)
@@ -62,6 +65,7 @@ public class SpecDataManager
                     };
                     _currencyDict[data.Id] = data;
                     _currencyList.Add(data);
+                    _currencyByTypeDict[data.CurrencyType] = data;
                 }
                 catch (Exception e)
                 {
@@ -87,6 +91,7 @@ public class SpecDataManager
 
             _monsterDict.Clear();
             _monsterList.Clear();
+            _monsterByTypeDict.Clear();
 
             List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 10);
             for (int i = 2; i < rows.Count; i++)
@@ -110,6 +115,7 @@ public class SpecDataManager
                     };
                     _monsterDict[data.Id] = data;
                     _monsterList.Add(data);
+                    _monsterByTypeDict[data.MonsterType] = data;
                 }
                 catch (Exception e)
                 {
@@ -128,6 +134,13 @@ public class SpecDataManager
         return result;
     }
 
+    public CurrencyMetaData GetCurrency(CurrencyType key)
+    {
+        CurrencyMetaData result;
+        _currencyByTypeDict.TryGetValue(key, out result);
+        return result;
+    }
+
     public List<CurrencyMetaData> GetAllCurrency()
     {
         return _currencyList;
@@ -137,6 +150,13 @@ public class SpecDataManager
     {
         MonsterMetaData result;
         _monsterDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public MonsterMetaData GetMonster(MonsterType key)
+    {
+        MonsterMetaData result;
+        _monsterByTypeDict.TryGetValue(key, out result);
         return result;
     }
 
