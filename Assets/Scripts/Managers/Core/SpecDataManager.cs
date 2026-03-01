@@ -11,38 +11,21 @@ using UnityEngine.Networking;
 /// <summary>
 /// Google Sheets JSON API를 런타임에 직접 호출하여 MetaData를 파싱합니다.
 /// 빌드 후에도 시트 데이터 변경이 즉시 반영됩니다 (재빌드 불필요).
-///
-/// [호출 순서]
-/// Managers.CoSpecDataManagerInit()
-///   → StartCoroutine(SpecData.CoDownloadDataSheet())
-///     → 각 시트 순차 다운로드 + 파싱
-///     → IsReady = true
-///
-/// [사용 예]
-/// MonsterMetaData data = Managers.SpecData.GetMonster(1);
 /// </summary>
 public class SpecDataManager
 {
-    // ── 상태 ──────────────────────────────────────────────────
     public bool IsReady { get; private set; }
 
-    // ── 데이터 저장소 ─────────────────────────────────────────
     Dictionary<int, CurrencyMetaData> _currencyDict = new Dictionary<int, CurrencyMetaData>();
     List<CurrencyMetaData>            _currencyList = new List<CurrencyMetaData>();
     Dictionary<int, MonsterMetaData> _monsterDict = new Dictionary<int, MonsterMetaData>();
     List<MonsterMetaData>            _monsterList = new List<MonsterMetaData>();
 
-    // ═══════════════════════════════════════════════════════════
-    // 메인 다운로드 코루틴
-    // Managers.CoSpecDataManagerInit()에서 StartCoroutine으로 호출
-    // ═══════════════════════════════════════════════════════════
     public IEnumerator CoDownloadDataSheet()
     {
         IsReady = false;
         Debug.Log("[SpecDataManager] 데이터 다운로드 시작");
 
-        // 시트를 순차적으로 다운로드 + 파싱
-        // (yield return으로 하나씩 완료 후 다음으로 넘어감)
         yield return CoFetch_Currency();
         yield return CoFetch_Monster();
 
@@ -50,16 +33,12 @@ public class SpecDataManager
         Debug.Log("[SpecDataManager] 모든 데이터 로드 완료");
     }
 
-    // ── 시트별 fetch 코루틴 ──────────────────────────────────
     IEnumerator CoFetch_Currency()
     {
-        string url = GoogleSheetConfig.BuildJsonUrl(
-            GoogleSheetConfig.SheetGids["Currency"]);
-
+        string url = GoogleSheetConfig.BuildJsonUrl("Currency");
         using (UnityWebRequest req = UnityWebRequest.Get(url))
         {
             yield return req.SendWebRequest();
-
             if (req.result != UnityWebRequest.Result.Success)
             {
                 Debug.LogError("[SpecDataManager] Currency 다운로드 실패: " + req.error);
@@ -69,13 +48,10 @@ public class SpecDataManager
             _currencyDict.Clear();
             _currencyList.Clear();
 
-            // GvizParser: rows[0]=타입힌트, rows[1]=헤더, rows[2~]=데이터
-            // colCount:2 → 0값 셀 생략 등으로 배열이 짧아지는 경우를 패딩으로 보완
             List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 2);
             for (int i = 2; i < rows.Count; i++)
             {
                 string[] cells = rows[i];
-                // Id 셀이 비어있으면 빈 행 → 스킵
                 if (string.IsNullOrEmpty(cells[0])) continue;
                 try
                 {
@@ -99,13 +75,10 @@ public class SpecDataManager
 
     IEnumerator CoFetch_Monster()
     {
-        string url = GoogleSheetConfig.BuildJsonUrl(
-            GoogleSheetConfig.SheetGids["Monster"]);
-
+        string url = GoogleSheetConfig.BuildJsonUrl("Monster");
         using (UnityWebRequest req = UnityWebRequest.Get(url))
         {
             yield return req.SendWebRequest();
-
             if (req.result != UnityWebRequest.Result.Success)
             {
                 Debug.LogError("[SpecDataManager] Monster 다운로드 실패: " + req.error);
@@ -115,13 +88,10 @@ public class SpecDataManager
             _monsterDict.Clear();
             _monsterList.Clear();
 
-            // GvizParser: rows[0]=타입힌트, rows[1]=헤더, rows[2~]=데이터
-            // colCount:10 → 0값 셀 생략 등으로 배열이 짧아지는 경우를 패딩으로 보완
             List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 10);
             for (int i = 2; i < rows.Count; i++)
             {
                 string[] cells = rows[i];
-                // Id 셀이 비어있으면 빈 행 → 스킵
                 if (string.IsNullOrEmpty(cells[0])) continue;
                 try
                 {
@@ -151,11 +121,6 @@ public class SpecDataManager
         }
     }
 
-    // ══════════════════════════════════════════════════════════
-    // 데이터 조회 API
-    // ══════════════════════════════════════════════════════════
-    // ── Currency ──────────────────────────────────────────
-    /// <summary>id로 단일 데이터 조회. 없으면 null 반환.</summary>
     public CurrencyMetaData GetCurrency(int id)
     {
         CurrencyMetaData result;
@@ -163,14 +128,11 @@ public class SpecDataManager
         return result;
     }
 
-    /// <summary>전체 목록 반환.</summary>
     public List<CurrencyMetaData> GetAllCurrency()
     {
         return _currencyList;
     }
 
-    // ── Monster ──────────────────────────────────────────
-    /// <summary>id로 단일 데이터 조회. 없으면 null 반환.</summary>
     public MonsterMetaData GetMonster(int id)
     {
         MonsterMetaData result;
@@ -178,15 +140,11 @@ public class SpecDataManager
         return result;
     }
 
-    /// <summary>전체 목록 반환.</summary>
     public List<MonsterMetaData> GetAllMonster()
     {
         return _monsterList;
     }
 
-    // ══════════════════════════════════════════════════════════
-    // 타입 변환 헬퍼 (GvizParser가 숫자를 "1.0" 형태로 내려줄 수 있어 방어처리)
-    // ══════════════════════════════════════════════════════════
     static int ParseInt(string s)
     {
         if (string.IsNullOrEmpty(s)) return 0;
@@ -204,5 +162,4 @@ public class SpecDataManager
         if (string.IsNullOrEmpty(s)) return default(T);
         return (T)Enum.Parse(typeof(T), s, true);
     }
-
 }

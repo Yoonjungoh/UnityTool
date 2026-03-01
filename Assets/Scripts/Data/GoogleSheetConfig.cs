@@ -6,26 +6,27 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Google Sheets 연결 설정. SpecDataManager가 런타임에 참조합니다.
+/// GID 대신 시트 이름 기반으로 URL을 구성합니다.
 /// </summary>
 public static class GoogleSheetConfig
 {
     public const string SpreadsheetId = "15DaZH8xH5lCG-37xep0nZ66eFRW9H04uSKYgUccrtXo";
 
-    public static readonly Dictionary<string, string> SheetGids =
-        new Dictionary<string, string>
+    public static readonly List<string> SheetNames =
+        new List<string>
     {
-        { "Currency", "0" },
-        { "Monster", "1375711091" },
+        "Currency",
+        "Monster",
     };
 
     /// <summary>
     /// Google Visualization JSON API URL (공개 시트, API Key 불필요)
-    /// 응답 형식: JSONP → JSONP 래퍼 제거 후 파싱
+    /// 시트 이름으로 조회 — GID 불필요.
     /// </summary>
-    public static string BuildJsonUrl(string gid)
+    public static string BuildJsonUrl(string sheetName)
     {
         return string.Format(
-            "https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:json&gid={1}",
-            SpreadsheetId, gid);
+            "https://docs.google.com/spreadsheets/d/{0}/gviz/tq?tqx=out:json&sheet={1}",
+            SpreadsheetId, System.Uri.EscapeDataString(sheetName));
     }
 }

@@ -7,21 +7,21 @@ public class Managers : MonoBehaviour
     static Managers s_instance;
     static Managers Instance { get { Init(); return s_instance; } }
 
-    DataManager     _data     = new DataManager();
+    DataManager _data = new DataManager();
     ResourceManager _resource = new ResourceManager();
-    SceneManagerEx  _scene    = new SceneManagerEx();
-    SoundManager    _sound    = new SoundManager();
+    SceneManagerEx _scene = new SceneManagerEx();
+    SoundManager _sound = new SoundManager();
     SpecDataManager _specData = new SpecDataManager();
-    UIManager       _ui       = new UIManager();
-    URLManager      _url      = new URLManager();
+    UIManager _ui = new UIManager();
+    URLManager _url = new URLManager();
 
-    public static DataManager     Data     { get { return Instance._data;     } }
+    public static DataManager Data { get { return Instance._data; } }
     public static ResourceManager Resource { get { return Instance._resource; } }
-    public static SceneManagerEx  Scene    { get { return Instance._scene;    } }
-    public static SoundManager    Sound    { get { return Instance._sound;    } }
+    public static SceneManagerEx Scene { get { return Instance._scene; } }
+    public static SoundManager Sound { get { return Instance._sound; } }
     public static SpecDataManager SpecData { get { return Instance._specData; } }
-    public static UIManager       UI       { get { return Instance._ui;       } }
-    public static URLManager      URL      { get { return Instance._url;      } }
+    public static UIManager UI { get { return Instance._ui; } }
+    public static URLManager URL { get { return Instance._url; } }
 
     void Start()
     {
