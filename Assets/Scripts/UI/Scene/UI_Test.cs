@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class UI_Test : UI_Scene
 {
@@ -28,6 +29,7 @@ public class UI_Test : UI_Scene
         _testButton.onClick.AddListener(AddScore);
         // _testText.text = Managers.SpecData.GetCurrency(1).CurrencyType.ToString();
         _testText.text = Managers.SpecData.GetMonster(MonsterType.Bear).MonsterType.ToString();
+        _testText.transform.DOMove(new Vector3(0, 0, 0), 1f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo);
     }
 
     void AddScore()
