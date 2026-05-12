@@ -59,6 +59,7 @@ public class GoogleSheetCodeGenerator : EditorWindow
                            "API Key 발급: console.cloud.google.com → Google Sheets API 활성화 → API 키 생성\n" +
                            "스프레드시트 공개 설정: 링크가 있는 모든 사용자 - 뷰어";
     private Vector2 _scroll;
+    private Vector2 _sheetListScroll;
     private string  _newSheetName  = "";
     private bool    _showApiKey    = false;
 
@@ -164,6 +165,7 @@ public class GoogleSheetCodeGenerator : EditorWindow
 
         // 시트 리스트
         EditorGUI.BeginDisabledGroup(!IsIdle);
+        _sheetListScroll = EditorGUILayout.BeginScrollView(_sheetListScroll, GUILayout.Height(Mathf.Min(_sheets.Count * 22 + 4, 200)));
         int removeIdx = -1;
         for (int i = 0; i < _sheets.Count; i++)
         {
@@ -177,6 +179,7 @@ public class GoogleSheetCodeGenerator : EditorWindow
             if (GUILayout.Button("✕", GUILayout.Width(24))) removeIdx = i;
             EditorGUILayout.EndHorizontal();
         }
+        EditorGUILayout.EndScrollView();
         if (removeIdx >= 0) { _sheets.RemoveAt(removeIdx); SavePrefs(); }
 
         // 수동 추가
@@ -413,10 +416,11 @@ public class GoogleSheetCodeGenerator : EditorWindow
             foreach (var col in kv.Value.Columns)
             {
                 if (col.TypeHint != "enum") continue;
-                if (!written.Add(col.FieldName)) continue;
+                string enumName = col.EnumTypeName ?? col.FieldName;
+                if (!written.Add(enumName)) continue;
 
                 any = true;
-                sb.AppendLine($"public enum {col.FieldName}");
+                sb.AppendLine($"public enum {enumName}");
                 sb.AppendLine("{");
                 sb.AppendLine("    None = 0,");
 
@@ -461,7 +465,10 @@ public class GoogleSheetCodeGenerator : EditorWindow
             sb.AppendLine($"public class {name}MetaData");
             sb.AppendLine("{");
             foreach (var col in kv.Value.Columns)
-                sb.AppendLine($"    public {HintToCsType(col.TypeHint, col.FieldName)} {col.FieldName};");
+            {
+                string typeName = col.TypeHint == "enum" ? (col.EnumTypeName ?? col.FieldName) : col.FieldName;
+                sb.AppendLine($"    public {HintToCsType(col.TypeHint, typeName)} {col.FieldName};");
+            }
             sb.AppendLine("}");
         }
 
@@ -607,7 +614,8 @@ public class GoogleSheetCodeGenerator : EditorWindow
             for (int i = 0; i < cols.Count; i++)
             {
                 var col   = cols[i];
-                string parse = BuildParseExpression($"cells[{i}]", col.TypeHint, col.FieldName);
+                string enumName2 = col.TypeHint == "enum" ? (col.EnumTypeName ?? col.FieldName) : col.FieldName;
+                string parse = BuildParseExpression($"cells[{i}]", col.TypeHint, enumName2);
                 sb.AppendLine($"                        {col.FieldName} = {parse},");
             }
             sb.AppendLine("                    };");
@@ -639,7 +647,10 @@ public class GoogleSheetCodeGenerator : EditorWindow
             sb.AppendLine("    }");
             sb.AppendLine();
             if (enumCol != null)
-                sb.AppendLine($"    public {name}MetaData Get{name}({enumCol.FieldName} key) => Get{name}((int)key);");
+            {
+                string eType = enumCol.EnumTypeName ?? enumCol.FieldName;
+                sb.AppendLine($"    public {name}MetaData Get{name}({eType} key) => Get{name}((int)key);");
+            }
             sb.AppendLine();
             sb.AppendLine($"    public List<{name}MetaData> GetAll{name}()");
             sb.AppendLine("    {");
@@ -854,8 +865,20 @@ public class GoogleSheetCodeGenerator : EditorWindow
         {
             string field = headerRow[i].Trim();
             if (string.IsNullOrEmpty(field)) continue;
-            string hint = i < typeRow.Length ? typeRow[i].Trim().ToLower() : "string";
-            result.Columns.Add(new ColumnInfo { FieldName = field, TypeHint = hint, ColIndex = i });
+            string rawHint = i < typeRow.Length ? typeRow[i].Trim() : "string";
+            string hint;
+            string enumTypeName = null;
+            var enumMatch = Regex.Match(rawHint, @"^enum\((\w+)\)$", RegexOptions.IgnoreCase);
+            if (enumMatch.Success)
+            {
+                hint = "enum";
+                enumTypeName = enumMatch.Groups[1].Value;
+            }
+            else
+            {
+                hint = rawHint.ToLower();
+            }
+            result.Columns.Add(new ColumnInfo { FieldName = field, TypeHint = hint, EnumTypeName = enumTypeName, ColIndex = i });
         }
 
         result.SampleRows = new List<List<string>>();
@@ -973,7 +996,8 @@ public class SheetParseResult
 public class ColumnInfo
 {
     public string FieldName;
-    public string TypeHint;
+    public string TypeHint;      // "int", "float", "string", "enum", ...
+    public string EnumTypeName;  // enum(CurrencyType) → "CurrencyType"
     public int    ColIndex;
 }
 

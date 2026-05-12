@@ -18,8 +18,42 @@ public class SpecDataManager
 
     Dictionary<int, CurrencyMetaData> _currencyDict = new Dictionary<int, CurrencyMetaData>();
     List<CurrencyMetaData>            _currencyList = new List<CurrencyMetaData>();
+    Dictionary<int, ItemMetaData> _itemDict = new Dictionary<int, ItemMetaData>();
+    List<ItemMetaData>            _itemList = new List<ItemMetaData>();
+    Dictionary<int, EquipmentMetaData> _equipmentDict = new Dictionary<int, EquipmentMetaData>();
+    List<EquipmentMetaData>            _equipmentList = new List<EquipmentMetaData>();
+    Dictionary<int, ConsumableMetaData> _consumableDict = new Dictionary<int, ConsumableMetaData>();
+    List<ConsumableMetaData>            _consumableList = new List<ConsumableMetaData>();
+    Dictionary<int, MiscMetaData> _miscDict = new Dictionary<int, MiscMetaData>();
+    List<MiscMetaData>            _miscList = new List<MiscMetaData>();
+    Dictionary<int, QuestDefinitionMetaData> _questDefinitionDict = new Dictionary<int, QuestDefinitionMetaData>();
+    List<QuestDefinitionMetaData>            _questDefinitionList = new List<QuestDefinitionMetaData>();
+    Dictionary<int, QuestObjectiveDefinitionMetaData> _questObjectiveDefinitionDict = new Dictionary<int, QuestObjectiveDefinitionMetaData>();
+    List<QuestObjectiveDefinitionMetaData>            _questObjectiveDefinitionList = new List<QuestObjectiveDefinitionMetaData>();
+    Dictionary<int, ProjectileMetaData> _projectileDict = new Dictionary<int, ProjectileMetaData>();
+    List<ProjectileMetaData>            _projectileList = new List<ProjectileMetaData>();
+    Dictionary<int, ExpMetaData> _expDict = new Dictionary<int, ExpMetaData>();
+    List<ExpMetaData>            _expList = new List<ExpMetaData>();
     Dictionary<int, MonsterMetaData> _monsterDict = new Dictionary<int, MonsterMetaData>();
     List<MonsterMetaData>            _monsterList = new List<MonsterMetaData>();
+    Dictionary<int, DropItemMetaData> _dropItemDict = new Dictionary<int, DropItemMetaData>();
+    List<DropItemMetaData>            _dropItemList = new List<DropItemMetaData>();
+    Dictionary<int, PlayerMetaData> _playerDict = new Dictionary<int, PlayerMetaData>();
+    List<PlayerMetaData>            _playerList = new List<PlayerMetaData>();
+    Dictionary<int, SkillMetaData> _skillDict = new Dictionary<int, SkillMetaData>();
+    List<SkillMetaData>            _skillList = new List<SkillMetaData>();
+    Dictionary<int, SkillChannelMetaData> _skillChannelDict = new Dictionary<int, SkillChannelMetaData>();
+    List<SkillChannelMetaData>            _skillChannelList = new List<SkillChannelMetaData>();
+    Dictionary<int, SkillCostMetaData> _skillCostDict = new Dictionary<int, SkillCostMetaData>();
+    List<SkillCostMetaData>            _skillCostList = new List<SkillCostMetaData>();
+    Dictionary<int, SkillActionMetaData> _skillActionDict = new Dictionary<int, SkillActionMetaData>();
+    List<SkillActionMetaData>            _skillActionList = new List<SkillActionMetaData>();
+    Dictionary<int, SkillAttackDetailMetaData> _skillAttackDetailDict = new Dictionary<int, SkillAttackDetailMetaData>();
+    List<SkillAttackDetailMetaData>            _skillAttackDetailList = new List<SkillAttackDetailMetaData>();
+    Dictionary<int, SkillBuffDetailMetaData> _skillBuffDetailDict = new Dictionary<int, SkillBuffDetailMetaData>();
+    List<SkillBuffDetailMetaData>            _skillBuffDetailList = new List<SkillBuffDetailMetaData>();
+    Dictionary<int, SkillDebuffDetailMetaData> _skillDebuffDetailDict = new Dictionary<int, SkillDebuffDetailMetaData>();
+    List<SkillDebuffDetailMetaData>            _skillDebuffDetailList = new List<SkillDebuffDetailMetaData>();
 
     public IEnumerator CoDownloadDataSheet()
     {
@@ -27,7 +61,24 @@ public class SpecDataManager
         Debug.Log("[SpecDataManager] 데이터 다운로드 시작");
 
         yield return CoFetch_Currency();
+        yield return CoFetch_Item();
+        yield return CoFetch_Equipment();
+        yield return CoFetch_Consumable();
+        yield return CoFetch_Misc();
+        yield return CoFetch_QuestDefinition();
+        yield return CoFetch_QuestObjectiveDefinition();
+        yield return CoFetch_Projectile();
+        yield return CoFetch_Exp();
         yield return CoFetch_Monster();
+        yield return CoFetch_DropItem();
+        yield return CoFetch_Player();
+        yield return CoFetch_Skill();
+        yield return CoFetch_SkillChannel();
+        yield return CoFetch_SkillCost();
+        yield return CoFetch_SkillAction();
+        yield return CoFetch_SkillAttackDetail();
+        yield return CoFetch_SkillBuffDetail();
+        yield return CoFetch_SkillDebuffDetail();
 
         IsReady = true;
         Debug.Log("[SpecDataManager] 모든 데이터 로드 완료");
@@ -73,6 +124,377 @@ public class SpecDataManager
         }
     }
 
+    IEnumerator CoFetch_Item()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("Item");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] Item 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _itemDict.Clear();
+            _itemList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 8);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    ItemMetaData data = new ItemMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        ItemType = ParseEnum<ItemType>(cells[1]),
+                        ItemGrade = ParseEnum<ItemGrade>(cells[2]),
+                        ItemName = cells[3],
+                        MaxStack = ParseInt(cells[4]),
+                        CanSell = (cells[5] == "true" || cells[5] == "1" || cells[5] == "yes"),
+                        SellPrice = ParseInt(cells[6]),
+                        Description = cells[7],
+                    };
+                    _itemDict[data.Id] = data;
+                    _itemList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] Item 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] Item 로드 완료: " + _itemList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_Equipment()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("Equipment");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] Equipment 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _equipmentDict.Clear();
+            _equipmentList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 16);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    EquipmentMetaData data = new EquipmentMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        EquipmentType = ParseEnum<EquipmentType>(cells[1]),
+                        EquipmentSlotType = ParseEnum<EquipmentSlotType>(cells[2]),
+                        RequiredLevel = ParseInt(cells[3]),
+                        RequiredSTR = ParseInt(cells[4]),
+                        RequiredDEX = ParseInt(cells[5]),
+                        RequiredINT = ParseInt(cells[6]),
+                        RequiredLUK = ParseInt(cells[7]),
+                        RequiredPlayerJob = cells[8],
+                        PhysicalDamage = ParseInt(cells[9]),
+                        MagicDamage = ParseInt(cells[10]),
+                        Defense = ParseInt(cells[11]),
+                        BaseSTR = ParseInt(cells[12]),
+                        BaseDEX = ParseInt(cells[13]),
+                        BaseINT = ParseInt(cells[14]),
+                        BaseLUK = ParseInt(cells[15]),
+                    };
+                    _equipmentDict[data.Id] = data;
+                    _equipmentList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] Equipment 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] Equipment 로드 완료: " + _equipmentList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_Consumable()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("Consumable");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] Consumable 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _consumableDict.Clear();
+            _consumableList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 11);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    ConsumableMetaData data = new ConsumableMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        ConsumableType = ParseEnum<ConsumableType>(cells[1]),
+                        RequiredLevel = ParseInt(cells[2]),
+                        RequiredSTR = ParseInt(cells[3]),
+                        RequiredDEX = ParseInt(cells[4]),
+                        RequiredINT = ParseInt(cells[5]),
+                        RequiredLUK = ParseInt(cells[6]),
+                        RequiredPlayerJob = cells[7],
+                        EffectValue = ParseInt(cells[8]),
+                        Duration = ParseFloat(cells[9]),
+                        CoolTime = ParseFloat(cells[10]),
+                    };
+                    _consumableDict[data.Id] = data;
+                    _consumableList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] Consumable 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] Consumable 로드 완료: " + _consumableList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_Misc()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("Misc");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] Misc 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _miscDict.Clear();
+            _miscList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 2);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    MiscMetaData data = new MiscMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        MiscType = ParseEnum<MiscType>(cells[1]),
+                    };
+                    _miscDict[data.Id] = data;
+                    _miscList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] Misc 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] Misc 로드 완료: " + _miscList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_QuestDefinition()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("QuestDefinition");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] QuestDefinition 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _questDefinitionDict.Clear();
+            _questDefinitionList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 10);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    QuestDefinitionMetaData data = new QuestDefinitionMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        MainQuestId = ParseInt(cells[1]),
+                        QuestType = ParseEnum<QuestType>(cells[2]),
+                        Title = cells[3],
+                        ReqLevel = ParseInt(cells[4]),
+                        PrereqQuestId = ParseInt(cells[5]),
+                        RewardIdList = cells[6],
+                        RewardAmountList = cells[7],
+                        NextQuestIdList = cells[8],
+                        Description = cells[9],
+                    };
+                    _questDefinitionDict[data.Id] = data;
+                    _questDefinitionList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] QuestDefinition 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] QuestDefinition 로드 완료: " + _questDefinitionList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_QuestObjectiveDefinition()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("QuestObjectiveDefinition");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] QuestObjectiveDefinition 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _questObjectiveDefinitionDict.Clear();
+            _questObjectiveDefinitionList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 9);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    QuestObjectiveDefinitionMetaData data = new QuestObjectiveDefinitionMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        MainQuestId = ParseInt(cells[1]),
+                        SubQuestId = ParseInt(cells[2]),
+                        QuestObjectiveType = ParseEnum<QuestObjectiveType>(cells[3]),
+                        TargetId = ParseInt(cells[4]),
+                        RequiredCount = ParseInt(cells[5]),
+                        RewardIdList = cells[6],
+                        RewardAmountList = cells[7],
+                        Description = cells[8],
+                    };
+                    _questObjectiveDefinitionDict[data.Id] = data;
+                    _questObjectiveDefinitionList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] QuestObjectiveDefinition 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] QuestObjectiveDefinition 로드 완료: " + _questObjectiveDefinitionList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_Projectile()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("Projectile");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] Projectile 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _projectileDict.Clear();
+            _projectileList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 8);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    ProjectileMetaData data = new ProjectileMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        ProjectileType = ParseEnum<ProjectileType>(cells[1]),
+                        LifeTime = ParseInt(cells[2]),
+                        MaxHitCount = ParseInt(cells[3]),
+                        MoveSpeed = ParseFloat(cells[4]),
+                        CommonAttackDamage = ParseInt(cells[5]),
+                        CommonAttackCoolTime = ParseFloat(cells[6]),
+                        MaxHp = ParseInt(cells[7]),
+                    };
+                    _projectileDict[data.Id] = data;
+                    _projectileList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] Projectile 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] Projectile 로드 완료: " + _projectileList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_Exp()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("Exp");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] Exp 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _expDict.Clear();
+            _expList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 3);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    ExpMetaData data = new ExpMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        Level = ParseInt(cells[1]),
+                        RequiredExp = string.IsNullOrEmpty(cells[2]) ? 0L : long.Parse(cells[2]),
+                    };
+                    _expDict[data.Id] = data;
+                    _expList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] Exp 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] Exp 로드 완료: " + _expList.Count + "개");
+        }
+    }
+
     IEnumerator CoFetch_Monster()
     {
         string url = GoogleSheetConfig.BuildJsonUrl("Monster");
@@ -88,7 +510,7 @@ public class SpecDataManager
             _monsterDict.Clear();
             _monsterList.Clear();
 
-            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 10);
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 13);
             for (int i = 2; i < rows.Count; i++)
             {
                 string[] cells = rows[i];
@@ -99,14 +521,17 @@ public class SpecDataManager
                     {
                         Id = ParseInt(cells[0]),
                         MonsterType = ParseEnum<MonsterType>(cells[1]),
-                        Level = ParseInt(cells[2]),
-                        MaxHp = ParseFloat(cells[3]),
-                        CommonAttackDamage = ParseFloat(cells[4]),
+                        DropItemGroupId = ParseInt(cells[2]),
+                        MaxHp = ParseInt(cells[3]),
+                        CommonAttackDamage = ParseInt(cells[4]),
                         CommonAttackCoolTime = ParseFloat(cells[5]),
                         AttackRange = ParseFloat(cells[6]),
-                        Defense = ParseFloat(cells[7]),
+                        Defense = ParseInt(cells[7]),
                         MoveSpeed = ParseFloat(cells[8]),
-                        Gold = ParseInt(cells[9]),
+                        Level = ParseInt(cells[9]),
+                        Exp = ParseInt(cells[10]),
+                        Gold = ParseInt(cells[11]),
+                        SearchRange = ParseFloat(cells[12]),
                     };
                     _monsterDict[data.Id] = data;
                     _monsterList.Add(data);
@@ -118,6 +543,420 @@ public class SpecDataManager
             }
 
             Debug.Log("[SpecDataManager] Monster 로드 완료: " + _monsterList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_DropItem()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("DropItem");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] DropItem 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _dropItemDict.Clear();
+            _dropItemList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 6);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    DropItemMetaData data = new DropItemMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        DropItemGroupId = ParseInt(cells[1]),
+                        ItemId = ParseInt(cells[2]),
+                        Probability = ParseInt(cells[3]),
+                        MinCount = ParseInt(cells[4]),
+                        MaxCount = ParseInt(cells[5]),
+                    };
+                    _dropItemDict[data.Id] = data;
+                    _dropItemList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] DropItem 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] DropItem 로드 완료: " + _dropItemList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_Player()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("Player");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] Player 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _playerDict.Clear();
+            _playerList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 20);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    PlayerMetaData data = new PlayerMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        PlayerJobType = ParseEnum<PlayerJobType>(cells[1]),
+                        JobMainDamageType = ParseEnum<JobMainDamageType>(cells[2]),
+                        MaxHp = ParseInt(cells[3]),
+                        MaxMp = ParseInt(cells[4]),
+                        MpRegen = ParseInt(cells[5]),
+                        PhysicalDamage = ParseInt(cells[6]),
+                        MagicDamage = ParseInt(cells[7]),
+                        CommonAttackCoolTime = ParseFloat(cells[8]),
+                        AttackRange = ParseFloat(cells[9]),
+                        Defense = ParseInt(cells[10]),
+                        MoveSpeed = ParseFloat(cells[11]),
+                        AttackHalfAngleDeg = ParseInt(cells[12]),
+                        AttackHeight = ParseInt(cells[13]),
+                        BaseSTR = ParseInt(cells[14]),
+                        BaseDEX = ParseInt(cells[15]),
+                        BaseINT = ParseInt(cells[16]),
+                        BaseLUK = ParseInt(cells[17]),
+                        CriticalRate = ParseInt(cells[18]),
+                        CriticalDamage = ParseFloat(cells[19]),
+                    };
+                    _playerDict[data.Id] = data;
+                    _playerList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] Player 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] Player 로드 완료: " + _playerList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_Skill()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("Skill");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] Skill 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _skillDict.Clear();
+            _skillList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 16);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    SkillMetaData data = new SkillMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        SkillType = ParseEnum<SkillType>(cells[1]),
+                        Name = cells[2],
+                        SkillCategoryType = ParseEnum<SkillCategoryType>(cells[3]),
+                        SkillActivationType = ParseEnum<SkillActivationType>(cells[4]),
+                        CastDirections = cells[5],
+                        CastRange = ParseFloat(cells[6]),
+                        TargetingType = ParseEnum<SkillTargetingType>(cells[7]),
+                        MaxTargets = ParseInt(cells[8]),
+                        RequiredLevel = ParseInt(cells[9]),
+                        RequiredJobs = cells[10],
+                        CoolTime = ParseFloat(cells[11]),
+                        CastTime = ParseFloat(cells[12]),
+                        SkillActionIds = cells[13],
+                        CastHalfAngles = cells[14],
+                        ChannelTickIntervalMs = ParseInt(cells[15]),
+                    };
+                    _skillDict[data.Id] = data;
+                    _skillList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] Skill 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] Skill 로드 완료: " + _skillList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_SkillChannel()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("SkillChannel");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] SkillChannel 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _skillChannelDict.Clear();
+            _skillChannelList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 5);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    SkillChannelMetaData data = new SkillChannelMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        SkillType = ParseEnum<SkillType>(cells[1]),
+                        MaxChannelMs = ParseInt(cells[2]),
+                        CastHalfAngles = cells[3],
+                        ChannelTickIntervalMs = ParseInt(cells[4]),
+                    };
+                    _skillChannelDict[data.Id] = data;
+                    _skillChannelList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] SkillChannel 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] SkillChannel 로드 완료: " + _skillChannelList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_SkillCost()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("SkillCost");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] SkillCost 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _skillCostDict.Clear();
+            _skillCostList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 5);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    SkillCostMetaData data = new SkillCostMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        SkillId = ParseInt(cells[1]),
+                        CostType = ParseEnum<SkillCostType>(cells[2]),
+                        Amount = ParseInt(cells[3]),
+                        ItemId = ParseInt(cells[4]),
+                    };
+                    _skillCostDict[data.Id] = data;
+                    _skillCostList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] SkillCost 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] SkillCost 로드 완료: " + _skillCostList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_SkillAction()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("SkillAction");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] SkillAction 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _skillActionDict.Clear();
+            _skillActionList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 5);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    SkillActionMetaData data = new SkillActionMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        SkillId = ParseInt(cells[1]),
+                        ActionType = ParseEnum<SkillActionType>(cells[2]),
+                        DelayMs = ParseInt(cells[3]),
+                        SkillDetailId = ParseInt(cells[4]),
+                    };
+                    _skillActionDict[data.Id] = data;
+                    _skillActionList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] SkillAction 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] SkillAction 로드 완료: " + _skillActionList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_SkillAttackDetail()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("SkillAttackDetail");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] SkillAttackDetail 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _skillAttackDetailDict.Clear();
+            _skillAttackDetailList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 5);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    SkillAttackDetailMetaData data = new SkillAttackDetailMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        DamageType = ParseEnum<JobMainDamageType>(cells[1]),
+                        DamageCoefficient = ParseFloat(cells[2]),
+                        AttackKind = ParseEnum<SkillAttackKind>(cells[3]),
+                        ProjectileTypeId = ParseInt(cells[4]),
+                    };
+                    _skillAttackDetailDict[data.Id] = data;
+                    _skillAttackDetailList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] SkillAttackDetail 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] SkillAttackDetail 로드 완료: " + _skillAttackDetailList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_SkillBuffDetail()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("SkillBuffDetail");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] SkillBuffDetail 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _skillBuffDetailDict.Clear();
+            _skillBuffDetailList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 5);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    SkillBuffDetailMetaData data = new SkillBuffDetailMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        BuffTargetStat = ParseEnum<StatType>(cells[1]),
+                        ValueType = ParseEnum<BuffValueType>(cells[2]),
+                        Value = ParseFloat(cells[3]),
+                        Duration = ParseFloat(cells[4]),
+                    };
+                    _skillBuffDetailDict[data.Id] = data;
+                    _skillBuffDetailList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] SkillBuffDetail 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] SkillBuffDetail 로드 완료: " + _skillBuffDetailList.Count + "개");
+        }
+    }
+
+    IEnumerator CoFetch_SkillDebuffDetail()
+    {
+        string url = GoogleSheetConfig.BuildJsonUrl("SkillDebuffDetail");
+        using (UnityWebRequest req = UnityWebRequest.Get(url))
+        {
+            yield return req.SendWebRequest();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("[SpecDataManager] SkillDebuffDetail 다운로드 실패: " + req.error);
+                yield break;
+            }
+
+            _skillDebuffDetailDict.Clear();
+            _skillDebuffDetailList.Clear();
+
+            List<string[]> rows = GvizParser.Parse(req.downloadHandler.text, colCount: 5);
+            for (int i = 2; i < rows.Count; i++)
+            {
+                string[] cells = rows[i];
+                if (string.IsNullOrEmpty(cells[0])) continue;
+                try
+                {
+                    SkillDebuffDetailMetaData data = new SkillDebuffDetailMetaData
+                    {
+                        Id = ParseInt(cells[0]),
+                        DebuffType = ParseEnum<DebuffType>(cells[1]),
+                        Value = ParseFloat(cells[2]),
+                        DamagePerTick = ParseInt(cells[3]),
+                        Duration = ParseFloat(cells[4]),
+                    };
+                    _skillDebuffDetailDict[data.Id] = data;
+                    _skillDebuffDetailList.Add(data);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SpecDataManager] SkillDebuffDetail 파싱 오류 row" + i + ": " + e.Message + " | " + string.Join(",", cells));
+                }
+            }
+
+            Debug.Log("[SpecDataManager] SkillDebuffDetail 로드 완료: " + _skillDebuffDetailList.Count + "개");
         }
     }
 
@@ -135,6 +974,117 @@ public class SpecDataManager
         return _currencyList;
     }
 
+    public ItemMetaData GetItem(int id)
+    {
+        ItemMetaData result;
+        _itemDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public ItemMetaData GetItem(ItemType key) => GetItem((int)key);
+
+    public List<ItemMetaData> GetAllItem()
+    {
+        return _itemList;
+    }
+
+    public EquipmentMetaData GetEquipment(int id)
+    {
+        EquipmentMetaData result;
+        _equipmentDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public EquipmentMetaData GetEquipment(EquipmentType key) => GetEquipment((int)key);
+
+    public List<EquipmentMetaData> GetAllEquipment()
+    {
+        return _equipmentList;
+    }
+
+    public ConsumableMetaData GetConsumable(int id)
+    {
+        ConsumableMetaData result;
+        _consumableDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public ConsumableMetaData GetConsumable(ConsumableType key) => GetConsumable((int)key);
+
+    public List<ConsumableMetaData> GetAllConsumable()
+    {
+        return _consumableList;
+    }
+
+    public MiscMetaData GetMisc(int id)
+    {
+        MiscMetaData result;
+        _miscDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public MiscMetaData GetMisc(MiscType key) => GetMisc((int)key);
+
+    public List<MiscMetaData> GetAllMisc()
+    {
+        return _miscList;
+    }
+
+    public QuestDefinitionMetaData GetQuestDefinition(int id)
+    {
+        QuestDefinitionMetaData result;
+        _questDefinitionDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public QuestDefinitionMetaData GetQuestDefinition(QuestType key) => GetQuestDefinition((int)key);
+
+    public List<QuestDefinitionMetaData> GetAllQuestDefinition()
+    {
+        return _questDefinitionList;
+    }
+
+    public QuestObjectiveDefinitionMetaData GetQuestObjectiveDefinition(int id)
+    {
+        QuestObjectiveDefinitionMetaData result;
+        _questObjectiveDefinitionDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public QuestObjectiveDefinitionMetaData GetQuestObjectiveDefinition(QuestObjectiveType key) => GetQuestObjectiveDefinition((int)key);
+
+    public List<QuestObjectiveDefinitionMetaData> GetAllQuestObjectiveDefinition()
+    {
+        return _questObjectiveDefinitionList;
+    }
+
+    public ProjectileMetaData GetProjectile(int id)
+    {
+        ProjectileMetaData result;
+        _projectileDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public ProjectileMetaData GetProjectile(ProjectileType key) => GetProjectile((int)key);
+
+    public List<ProjectileMetaData> GetAllProjectile()
+    {
+        return _projectileList;
+    }
+
+    public ExpMetaData GetExp(int id)
+    {
+        ExpMetaData result;
+        _expDict.TryGetValue(id, out result);
+        return result;
+    }
+
+
+    public List<ExpMetaData> GetAllExp()
+    {
+        return _expList;
+    }
+
     public MonsterMetaData GetMonster(int id)
     {
         MonsterMetaData result;
@@ -147,6 +1097,131 @@ public class SpecDataManager
     public List<MonsterMetaData> GetAllMonster()
     {
         return _monsterList;
+    }
+
+    public DropItemMetaData GetDropItem(int id)
+    {
+        DropItemMetaData result;
+        _dropItemDict.TryGetValue(id, out result);
+        return result;
+    }
+
+
+    public List<DropItemMetaData> GetAllDropItem()
+    {
+        return _dropItemList;
+    }
+
+    public PlayerMetaData GetPlayer(int id)
+    {
+        PlayerMetaData result;
+        _playerDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public PlayerMetaData GetPlayer(PlayerJobType key) => GetPlayer((int)key);
+
+    public List<PlayerMetaData> GetAllPlayer()
+    {
+        return _playerList;
+    }
+
+    public SkillMetaData GetSkill(int id)
+    {
+        SkillMetaData result;
+        _skillDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public SkillMetaData GetSkill(SkillType key) => GetSkill((int)key);
+
+    public List<SkillMetaData> GetAllSkill()
+    {
+        return _skillList;
+    }
+
+    public SkillChannelMetaData GetSkillChannel(int id)
+    {
+        SkillChannelMetaData result;
+        _skillChannelDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public SkillChannelMetaData GetSkillChannel(SkillType key) => GetSkillChannel((int)key);
+
+    public List<SkillChannelMetaData> GetAllSkillChannel()
+    {
+        return _skillChannelList;
+    }
+
+    public SkillCostMetaData GetSkillCost(int id)
+    {
+        SkillCostMetaData result;
+        _skillCostDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public SkillCostMetaData GetSkillCost(SkillCostType key) => GetSkillCost((int)key);
+
+    public List<SkillCostMetaData> GetAllSkillCost()
+    {
+        return _skillCostList;
+    }
+
+    public SkillActionMetaData GetSkillAction(int id)
+    {
+        SkillActionMetaData result;
+        _skillActionDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public SkillActionMetaData GetSkillAction(SkillActionType key) => GetSkillAction((int)key);
+
+    public List<SkillActionMetaData> GetAllSkillAction()
+    {
+        return _skillActionList;
+    }
+
+    public SkillAttackDetailMetaData GetSkillAttackDetail(int id)
+    {
+        SkillAttackDetailMetaData result;
+        _skillAttackDetailDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public SkillAttackDetailMetaData GetSkillAttackDetail(JobMainDamageType key) => GetSkillAttackDetail((int)key);
+
+    public List<SkillAttackDetailMetaData> GetAllSkillAttackDetail()
+    {
+        return _skillAttackDetailList;
+    }
+
+    public SkillBuffDetailMetaData GetSkillBuffDetail(int id)
+    {
+        SkillBuffDetailMetaData result;
+        _skillBuffDetailDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public SkillBuffDetailMetaData GetSkillBuffDetail(StatType key) => GetSkillBuffDetail((int)key);
+
+    public List<SkillBuffDetailMetaData> GetAllSkillBuffDetail()
+    {
+        return _skillBuffDetailList;
+    }
+
+    public SkillDebuffDetailMetaData GetSkillDebuffDetail(int id)
+    {
+        SkillDebuffDetailMetaData result;
+        _skillDebuffDetailDict.TryGetValue(id, out result);
+        return result;
+    }
+
+    public SkillDebuffDetailMetaData GetSkillDebuffDetail(DebuffType key) => GetSkillDebuffDetail((int)key);
+
+    public List<SkillDebuffDetailMetaData> GetAllSkillDebuffDetail()
+    {
+        return _skillDebuffDetailList;
     }
 
     static int ParseInt(string s)

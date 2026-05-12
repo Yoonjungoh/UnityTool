@@ -35,7 +35,7 @@ public class UI_Test : UI_Scene
     void AddScore()
     {
         _score++;
-        _testText.text = Managers.Config.GetString(ConfigType.TestWord);
+        // _testText.text = Managers.Config.GetString(ConfigType.TestWord);
         // Managers.Scene.LoadScene("Login");
     }
 }

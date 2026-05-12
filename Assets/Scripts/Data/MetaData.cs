@@ -15,18 +15,262 @@ public class CurrencyMetaData
     public CurrencyType CurrencyType;
 }
 
+// ── Item ─────────────────────────────────────────
+[Serializable]
+public class ItemMetaData
+{
+    public int Id;
+    public ItemType ItemType;
+    public ItemGrade ItemGrade;
+    public string ItemName;
+    public int MaxStack;
+    public bool CanSell;
+    public int SellPrice;
+    public string Description;
+}
+
+// ── Equipment ─────────────────────────────────────────
+[Serializable]
+public class EquipmentMetaData
+{
+    public int Id;
+    public EquipmentType EquipmentType;
+    public EquipmentSlotType EquipmentSlotType;
+    public int RequiredLevel;
+    public int RequiredSTR;
+    public int RequiredDEX;
+    public int RequiredINT;
+    public int RequiredLUK;
+    public string RequiredPlayerJob;
+    public int PhysicalDamage;
+    public int MagicDamage;
+    public int Defense;
+    public int BaseSTR;
+    public int BaseDEX;
+    public int BaseINT;
+    public int BaseLUK;
+}
+
+// ── Consumable ─────────────────────────────────────────
+[Serializable]
+public class ConsumableMetaData
+{
+    public int Id;
+    public ConsumableType ConsumableType;
+    public int RequiredLevel;
+    public int RequiredSTR;
+    public int RequiredDEX;
+    public int RequiredINT;
+    public int RequiredLUK;
+    public string RequiredPlayerJob;
+    public int EffectValue;
+    public float Duration;
+    public float CoolTime;
+}
+
+// ── Misc ─────────────────────────────────────────
+[Serializable]
+public class MiscMetaData
+{
+    public int Id;
+    public MiscType MiscType;
+}
+
+// ── QuestDefinition ─────────────────────────────────────────
+[Serializable]
+public class QuestDefinitionMetaData
+{
+    public int Id;
+    public int MainQuestId;
+    public QuestType QuestType;
+    public string Title;
+    public int ReqLevel;
+    public int PrereqQuestId;
+    public string RewardIdList;
+    public string RewardAmountList;
+    public string NextQuestIdList;
+    public string Description;
+}
+
+// ── QuestObjectiveDefinition ─────────────────────────────────────────
+[Serializable]
+public class QuestObjectiveDefinitionMetaData
+{
+    public int Id;
+    public int MainQuestId;
+    public int SubQuestId;
+    public QuestObjectiveType QuestObjectiveType;
+    public int TargetId;
+    public int RequiredCount;
+    public string RewardIdList;
+    public string RewardAmountList;
+    public string Description;
+}
+
+// ── Projectile ─────────────────────────────────────────
+[Serializable]
+public class ProjectileMetaData
+{
+    public int Id;
+    public ProjectileType ProjectileType;
+    public int LifeTime;
+    public int MaxHitCount;
+    public float MoveSpeed;
+    public int CommonAttackDamage;
+    public float CommonAttackCoolTime;
+    public int MaxHp;
+}
+
+// ── Exp ─────────────────────────────────────────
+[Serializable]
+public class ExpMetaData
+{
+    public int Id;
+    public int Level;
+    public long RequiredExp;
+}
+
 // ── Monster ─────────────────────────────────────────
 [Serializable]
 public class MonsterMetaData
 {
     public int Id;
     public MonsterType MonsterType;
-    public int Level;
-    public float MaxHp;
-    public float CommonAttackDamage;
+    public int DropItemGroupId;
+    public int MaxHp;
+    public int CommonAttackDamage;
     public float CommonAttackCoolTime;
     public float AttackRange;
-    public float Defense;
+    public int Defense;
     public float MoveSpeed;
+    public int Level;
+    public int Exp;
     public int Gold;
+    public float SearchRange;
+}
+
+// ── DropItem ─────────────────────────────────────────
+[Serializable]
+public class DropItemMetaData
+{
+    public int Id;
+    public int DropItemGroupId;
+    public int ItemId;
+    public int Probability;
+    public int MinCount;
+    public int MaxCount;
+}
+
+// ── Player ─────────────────────────────────────────
+[Serializable]
+public class PlayerMetaData
+{
+    public int Id;
+    public PlayerJobType PlayerJobType;
+    public JobMainDamageType JobMainDamageType;
+    public int MaxHp;
+    public int MaxMp;
+    public int MpRegen;
+    public int PhysicalDamage;
+    public int MagicDamage;
+    public float CommonAttackCoolTime;
+    public float AttackRange;
+    public int Defense;
+    public float MoveSpeed;
+    public int AttackHalfAngleDeg;
+    public int AttackHeight;
+    public int BaseSTR;
+    public int BaseDEX;
+    public int BaseINT;
+    public int BaseLUK;
+    public int CriticalRate;
+    public float CriticalDamage;
+}
+
+// ── Skill ─────────────────────────────────────────
+[Serializable]
+public class SkillMetaData
+{
+    public int Id;
+    public SkillType SkillType;
+    public string Name;
+    public SkillCategoryType SkillCategoryType;
+    public SkillActivationType SkillActivationType;
+    public string CastDirections;
+    public float CastRange;
+    public SkillTargetingType TargetingType;
+    public int MaxTargets;
+    public int RequiredLevel;
+    public string RequiredJobs;
+    public float CoolTime;
+    public float CastTime;
+    public string SkillActionIds;
+    public string CastHalfAngles;
+    public int ChannelTickIntervalMs;
+}
+
+// ── SkillChannel ─────────────────────────────────────────
+[Serializable]
+public class SkillChannelMetaData
+{
+    public int Id;
+    public SkillType SkillType;
+    public int MaxChannelMs;
+    public string CastHalfAngles;
+    public int ChannelTickIntervalMs;
+}
+
+// ── SkillCost ─────────────────────────────────────────
+[Serializable]
+public class SkillCostMetaData
+{
+    public int Id;
+    public int SkillId;
+    public SkillCostType CostType;
+    public int Amount;
+    public int ItemId;
+}
+
+// ── SkillAction ─────────────────────────────────────────
+[Serializable]
+public class SkillActionMetaData
+{
+    public int Id;
+    public int SkillId;
+    public SkillActionType ActionType;
+    public int DelayMs;
+    public int SkillDetailId;
+}
+
+// ── SkillAttackDetail ─────────────────────────────────────────
+[Serializable]
+public class SkillAttackDetailMetaData
+{
+    public int Id;
+    public JobMainDamageType DamageType;
+    public float DamageCoefficient;
+    public SkillAttackKind AttackKind;
+    public int ProjectileTypeId;
+}
+
+// ── SkillBuffDetail ─────────────────────────────────────────
+[Serializable]
+public class SkillBuffDetailMetaData
+{
+    public int Id;
+    public StatType BuffTargetStat;
+    public BuffValueType ValueType;
+    public float Value;
+    public float Duration;
+}
+
+// ── SkillDebuffDetail ─────────────────────────────────────────
+[Serializable]
+public class SkillDebuffDetailMetaData
+{
+    public int Id;
+    public DebuffType DebuffType;
+    public float Value;
+    public int DamagePerTick;
+    public float Duration;
 }

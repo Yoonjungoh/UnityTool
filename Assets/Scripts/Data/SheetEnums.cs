@@ -9,7 +9,75 @@ public enum CurrencyType
     Gold,
     Jewel,
     Exp,
-    Level,
+}
+
+public enum ItemType
+{
+    None = 0,
+    Equipment,
+    Consumable,
+    Misc,
+}
+
+public enum ItemGrade
+{
+    None = 0,
+    Normal,
+    Rare,
+    Epic,
+}
+
+public enum EquipmentType
+{
+    None = 0,
+    BasicSword,
+    BasicShield,
+    BasicHelmet,
+    BasicChest,
+    BasicPants,
+    BasicBoots,
+    FlyBoots,
+}
+
+public enum EquipmentSlotType
+{
+    None = 0,
+    MainWeapon,
+    SubWeapon,
+    Helmet,
+    Chest,
+    Pants,
+    Boots,
+}
+
+public enum ConsumableType
+{
+    None = 0,
+    BasicRecoveryHpPotion,
+}
+
+public enum MiscType
+{
+    None = 0,
+    BearLeather,
+}
+
+public enum QuestType
+{
+    None = 0,
+    Main,
+}
+
+public enum QuestObjectiveType
+{
+    None = 0,
+    Kill,
+}
+
+public enum ProjectileType
+{
+    None = 0,
+    MagicMissile,
 }
 
 public enum MonsterType
@@ -18,12 +86,103 @@ public enum MonsterType
     Bear,
 }
 
+public enum PlayerJobType
+{
+    None = 0,
+    Warrior,
+}
+
+public enum JobMainDamageType
+{
+    None = 0,
+    Physical,
+}
+
 public enum ConfigType
 {
     None = 0,
-    EventDay,
-    JumpDelay,
-    StartWord,
-    TestWord,
+    RequiredIdleTime,
+    DefaultCreationMainQuestId,
+    DefaultCreationSubQuestId,
+    DefaultInventorySize,
+    EquipmentStartId,
+    ConsumableStartId,
+    MiscStartId,
+    DefaultEquimentInventorySize,
+    DefaultConsumableInventorySize,
+    DefaultMiscInventorySize,
+    DropItemPickupRadius,
+    AutoSaveDBIntervalMs,
+    DefaultStartMapId,
+}
+
+public enum SkillType
+{
+    None = 0,
+    MagicMissile,
+    LightningChannel,
+}
+
+public enum SkillCategoryType
+{
+    None = 0,
+    Attack,
+}
+
+public enum SkillActivationType
+{
+    None = 0,
+    Instant,
+    Channeling,
+}
+
+public enum SkillTargetingType
+{
+    None = 0,
+    Enemy,
+}
+
+public enum SkillCostType
+{
+    None = 0,
+    Mp,
+    Hp,
+}
+
+public enum SkillActionType
+{
+    None = 0,
+    SpawnProjectile,
+    Damage,
+}
+
+public enum SkillAttackKind
+{
+    None = 0,
+    Ranged,
+    Melee,
+}
+
+public enum StatType
+{
+    None = 0,
+    PhysicalDamage,
+    Dex,
+}
+
+public enum BuffValueType
+{
+    None = 0,
+    Percent,
+    Flat,
+}
+
+public enum DebuffType
+{
+    None = 0,
+    Stun,
+    Slow,
+    Poison,
+    Bleed,
 }
 

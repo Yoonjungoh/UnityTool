@@ -10,14 +10,31 @@ using System.Collections.Generic;
 /// </summary>
 public static class GoogleSheetConfig
 {
-    public const string SpreadsheetId = "15DaZH8xH5lCG-37xep0nZ66eFRW9H04uSKYgUccrtXo";
+    public const string SpreadsheetId = "1I3ClbfFILySaBlP5TddE2I7xaxMrN7s-5sxXAocGoPE";
 
     public static readonly List<string> SheetNames =
         new List<string>
     {
         "Currency",
+        "Item",
+        "Equipment",
+        "Consumable",
+        "Misc",
+        "QuestDefinition",
+        "QuestObjectiveDefinition",
+        "Projectile",
+        "Exp",
         "Monster",
+        "DropItem",
+        "Player",
         "Config",
+        "Skill",
+        "SkillChannel",
+        "SkillCost",
+        "SkillAction",
+        "SkillAttackDetail",
+        "SkillBuffDetail",
+        "SkillDebuffDetail",
     };
 
     /// <summary>
