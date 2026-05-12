@@ -166,15 +166,7 @@ public static class GvizParser
         while (vs < obj.Length && obj[vs] == ' ') vs++;
         if (vs >= obj.Length || obj[vs] != '"') return "";
 
-        int end = vs + 1;
-        while (end < obj.Length)
-        {
-            if (obj[end] == '\\') { end += 2; continue; }
-            if (obj[end] == '"') break;
-            end++;
-        }
-        string s = obj.Substring(vs + 1, end - vs - 1);
-        return s.Replace("\\\"", "\"").Replace("\\\\", "\\").Replace("\\n", "\n");
+        return DecodeJsonString(obj, vs + 1);
     }
 
     // ── cols 수 파악 (레이블 추출 실패 시 폴백) ──────────────────
@@ -274,18 +266,7 @@ public static class GvizParser
 
         // 문자열
         if (first == '"')
-        {
-            int end = vs + 1;
-            while (end < cell.Length)
-            {
-                if (cell[end] == '\\') { end += 2; continue; }
-                if (cell[end] == '"') break;
-                end++;
-            }
-            string s = cell.Substring(vs + 1, end - vs - 1);
-            s = s.Replace("\\\"", "\"").Replace("\\\\", "\\").Replace("\\n", "\n");
-            return s;
-        }
+            return DecodeJsonString(cell, vs + 1);
 
         // 숫자
         if (char.IsDigit(first) || first == '-')
@@ -312,6 +293,53 @@ public static class GvizParser
         }
 
         return string.Empty;
+    }
+
+    // ── JSON 문자열 디코딩 (\uXXXX 포함) ─────────────────────────
+    // startPos: 여는 " 다음 첫 글자 위치
+    private static string DecodeJsonString(string s, int startPos)
+    {
+        var sb = new System.Text.StringBuilder();
+        int pos = startPos;
+        while (pos < s.Length)
+        {
+            char c = s[pos];
+            if (c == '"') break;
+            if (c == '\\' && pos + 1 < s.Length)
+            {
+                char esc = s[pos + 1];
+                switch (esc)
+                {
+                    case '"':  sb.Append('"');  pos += 2; break;
+                    case '\\': sb.Append('\\'); pos += 2; break;
+                    case '/':  sb.Append('/');  pos += 2; break;
+                    case 'n':  sb.Append('\n'); pos += 2; break;
+                    case 'r':  sb.Append('\r'); pos += 2; break;
+                    case 't':  sb.Append('\t'); pos += 2; break;
+                    case 'u' when pos + 5 < s.Length:
+                        string hex = s.Substring(pos + 2, 4);
+                        if (int.TryParse(hex,
+                                System.Globalization.NumberStyles.HexNumber,
+                                System.Globalization.CultureInfo.InvariantCulture,
+                                out int cp))
+                        {
+                            sb.Append((char)cp); pos += 6;
+                        }
+                        else
+                        {
+                            sb.Append(esc); pos += 2;
+                        }
+                        break;
+                    default: sb.Append(esc); pos += 2; break;
+                }
+            }
+            else
+            {
+                sb.Append(c);
+                pos++;
+            }
+        }
+        return sb.ToString();
     }
 
     // ── 다음 문자열 출현 위치 ────────────────────────────────────

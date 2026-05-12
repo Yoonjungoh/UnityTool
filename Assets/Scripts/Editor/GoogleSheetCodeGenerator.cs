@@ -430,8 +430,25 @@ public class GoogleSheetCodeGenerator : EditorWindow
                 foreach (var row in kv.Value.SampleRows)
                 {
                     string val = idx < row.Count ? row[idx].Trim() : "";
-                    if (!string.IsNullOrEmpty(val) && seen.Add(val))
-                        sb.AppendLine($"    {val},");
+                    if (string.IsNullOrEmpty(val)) continue;
+
+                    // IsList 컬럼은 {Front,Sphere} 형식 → {} 제거 후 쉼표 분리
+                    if (col.IsList)
+                    {
+                        if (val.StartsWith("{") && val.EndsWith("}"))
+                            val = val.Substring(1, val.Length - 2);
+                        foreach (var part in val.Split(','))
+                        {
+                            string member = part.Trim();
+                            if (!string.IsNullOrEmpty(member) && seen.Add(member))
+                                sb.AppendLine($"    {member},");
+                        }
+                    }
+                    else
+                    {
+                        if (seen.Add(val))
+                            sb.AppendLine($"    {val},");
+                    }
                 }
 
                 sb.AppendLine("}");
@@ -451,6 +468,7 @@ public class GoogleSheetCodeGenerator : EditorWindow
         var sb = new StringBuilder();
         AppendFileHeader(sb);
         sb.AppendLine("using System;");
+        sb.AppendLine("using System.Collections.Generic;");
         sb.AppendLine();
         sb.AppendLine("// 모든 MetaData 클래스는 이 파일에서 통합 관리합니다.");
         sb.AppendLine("// 컬럼 구조가 바뀌면 에디터 툴을 재실행하세요.");
@@ -466,8 +484,10 @@ public class GoogleSheetCodeGenerator : EditorWindow
             sb.AppendLine("{");
             foreach (var col in kv.Value.Columns)
             {
-                string typeName = col.TypeHint == "enum" ? (col.EnumTypeName ?? col.FieldName) : col.FieldName;
-                sb.AppendLine($"    public {HintToCsType(col.TypeHint, typeName)} {col.FieldName};");
+                string enumName = col.TypeHint == "enum" ? (col.EnumTypeName ?? col.FieldName) : col.FieldName;
+                string csType   = HintToCsType(col.TypeHint, enumName);
+                if (col.IsList) csType = $"List<{csType}>";
+                sb.AppendLine($"    public {csType} {col.FieldName};");
             }
             sb.AppendLine("}");
         }
@@ -615,7 +635,9 @@ public class GoogleSheetCodeGenerator : EditorWindow
             {
                 var col   = cols[i];
                 string enumName2 = col.TypeHint == "enum" ? (col.EnumTypeName ?? col.FieldName) : col.FieldName;
-                string parse = BuildParseExpression($"cells[{i}]", col.TypeHint, enumName2);
+                string parse = col.IsList
+                    ? BuildListParseExpression($"cells[{i}]", col.TypeHint, enumName2)
+                    : BuildParseExpression($"cells[{i}]", col.TypeHint, enumName2);
                 sb.AppendLine($"                        {col.FieldName} = {parse},");
             }
             sb.AppendLine("                    };");
@@ -675,6 +697,20 @@ public class GoogleSheetCodeGenerator : EditorWindow
         sb.AppendLine("    {");
         sb.AppendLine("        if (string.IsNullOrEmpty(s)) return default(T);");
         sb.AppendLine("        return (T)Enum.Parse(typeof(T), s, true);");
+        sb.AppendLine("    }");
+        sb.AppendLine("    static List<T> ParseList<T>(string s, System.Func<string, T> parse)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        var result = new List<T>();");
+        sb.AppendLine("        if (string.IsNullOrEmpty(s)) return result;");
+        sb.AppendLine("        string trimmed = s.Trim();");
+        sb.AppendLine("        if (trimmed.Length > 1 && trimmed[0] == '{' && trimmed[trimmed.Length - 1] == '}')");
+        sb.AppendLine("            trimmed = trimmed.Substring(1, trimmed.Length - 2);");
+        sb.AppendLine("        foreach (var part in trimmed.Split(','))");
+        sb.AppendLine("        {");
+        sb.AppendLine("            string t = part.Trim();");
+        sb.AppendLine("            if (!string.IsNullOrEmpty(t)) result.Add(parse(t));");
+        sb.AppendLine("        }");
+        sb.AppendLine("        return result;");
         sb.AppendLine("    }");
         sb.AppendLine("}");
 
@@ -868,17 +904,27 @@ public class GoogleSheetCodeGenerator : EditorWindow
             string rawHint = i < typeRow.Length ? typeRow[i].Trim() : "string";
             string hint;
             string enumTypeName = null;
-            var enumMatch = Regex.Match(rawHint, @"^enum\((\w+)\)$", RegexOptions.IgnoreCase);
-            if (enumMatch.Success)
+            bool   isList = false;
+            var listEnumMatch = Regex.Match(rawHint, @"^List<enum>\((\w+)\)$", RegexOptions.IgnoreCase);
+            var listPrimMatch  = Regex.Match(rawHint, @"^List<(\w+)>$",         RegexOptions.IgnoreCase);
+            var enumMatch      = Regex.Match(rawHint, @"^enum\((\w+)\)$",       RegexOptions.IgnoreCase);
+            if (listEnumMatch.Success)
             {
-                hint = "enum";
-                enumTypeName = enumMatch.Groups[1].Value;
+                isList = true; hint = "enum"; enumTypeName = listEnumMatch.Groups[1].Value;
+            }
+            else if (listPrimMatch.Success)
+            {
+                isList = true; hint = listPrimMatch.Groups[1].Value.ToLower();
+            }
+            else if (enumMatch.Success)
+            {
+                hint = "enum"; enumTypeName = enumMatch.Groups[1].Value;
             }
             else
             {
                 hint = rawHint.ToLower();
             }
-            result.Columns.Add(new ColumnInfo { FieldName = field, TypeHint = hint, EnumTypeName = enumTypeName, ColIndex = i });
+            result.Columns.Add(new ColumnInfo { FieldName = field, TypeHint = hint, EnumTypeName = enumTypeName, IsList = isList, ColIndex = i });
         }
 
         result.SampleRows = new List<List<string>>();
@@ -912,6 +958,22 @@ public class GoogleSheetCodeGenerator : EditorWindow
         "enum"   => fieldName,
         _        => "string"
     };
+
+    private static string BuildListParseExpression(string cellExpr, string hint, string enumName)
+    {
+        string inner = hint switch
+        {
+            "int"    => "s => ParseInt(s)",
+            "float"  => "s => ParseFloat(s)",
+            "double" => "s => string.IsNullOrEmpty(s) ? 0.0 : double.Parse(s, System.Globalization.CultureInfo.InvariantCulture)",
+            "long"   => "s => string.IsNullOrEmpty(s) ? 0L : long.Parse(s)",
+            "bool"   => "s => (s == \"true\" || s == \"1\" || s == \"yes\")",
+            "string" => "s => s",
+            "enum"   => $"s => ParseEnum<{enumName}>(s)",
+            _        => "s => s",
+        };
+        return $"ParseList({cellExpr}, {inner})";
+    }
 
     private static string BuildParseExpression(string cellExpr, string hint, string fieldName)
     {
@@ -998,6 +1060,7 @@ public class ColumnInfo
     public string FieldName;
     public string TypeHint;      // "int", "float", "string", "enum", ...
     public string EnumTypeName;  // enum(CurrencyType) → "CurrencyType"
+    public bool   IsList;        // List<...> 형식 여부
     public int    ColIndex;
 }
 

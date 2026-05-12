@@ -202,7 +202,7 @@ public class SpecDataManager
                         RequiredDEX = ParseInt(cells[5]),
                         RequiredINT = ParseInt(cells[6]),
                         RequiredLUK = ParseInt(cells[7]),
-                        RequiredPlayerJob = cells[8],
+                        RequiredPlayerJob = ParseList(cells[8], s => ParseEnum<PlayerJobType>(s)),
                         PhysicalDamage = ParseInt(cells[9]),
                         MagicDamage = ParseInt(cells[10]),
                         Defense = ParseInt(cells[11]),
@@ -255,7 +255,7 @@ public class SpecDataManager
                         RequiredDEX = ParseInt(cells[4]),
                         RequiredINT = ParseInt(cells[5]),
                         RequiredLUK = ParseInt(cells[6]),
-                        RequiredPlayerJob = cells[7],
+                        RequiredPlayerJob = ParseList(cells[7], s => ParseEnum<PlayerJobType>(s)),
                         EffectValue = ParseInt(cells[8]),
                         Duration = ParseFloat(cells[9]),
                         CoolTime = ParseFloat(cells[10]),
@@ -343,9 +343,9 @@ public class SpecDataManager
                         Title = cells[3],
                         ReqLevel = ParseInt(cells[4]),
                         PrereqQuestId = ParseInt(cells[5]),
-                        RewardIdList = cells[6],
-                        RewardAmountList = cells[7],
-                        NextQuestIdList = cells[8],
+                        RewardIdList = ParseList(cells[6], s => ParseInt(s)),
+                        RewardAmountList = ParseList(cells[7], s => ParseInt(s)),
+                        NextQuestIdList = ParseList(cells[8], s => ParseInt(s)),
                         Description = cells[9],
                     };
                     _questDefinitionDict[data.Id] = data;
@@ -391,8 +391,8 @@ public class SpecDataManager
                         QuestObjectiveType = ParseEnum<QuestObjectiveType>(cells[3]),
                         TargetId = ParseInt(cells[4]),
                         RequiredCount = ParseInt(cells[5]),
-                        RewardIdList = cells[6],
-                        RewardAmountList = cells[7],
+                        RewardIdList = ParseList(cells[6], s => ParseInt(s)),
+                        RewardAmountList = ParseList(cells[7], s => ParseInt(s)),
                         Description = cells[8],
                     };
                     _questObjectiveDefinitionDict[data.Id] = data;
@@ -677,16 +677,16 @@ public class SpecDataManager
                         Name = cells[2],
                         SkillCategoryType = ParseEnum<SkillCategoryType>(cells[3]),
                         SkillActivationType = ParseEnum<SkillActivationType>(cells[4]),
-                        CastDirections = cells[5],
+                        CastDirections = ParseList(cells[5], s => ParseEnum<CastDirectionType>(s)),
                         CastRange = ParseFloat(cells[6]),
                         TargetingType = ParseEnum<SkillTargetingType>(cells[7]),
                         MaxTargets = ParseInt(cells[8]),
                         RequiredLevel = ParseInt(cells[9]),
-                        RequiredJobs = cells[10],
+                        RequiredJobs = ParseList(cells[10], s => ParseEnum<PlayerJobType>(s)),
                         CoolTime = ParseFloat(cells[11]),
                         CastTime = ParseFloat(cells[12]),
-                        SkillActionIds = cells[13],
-                        CastHalfAngles = cells[14],
+                        SkillActionIds = ParseList(cells[13], s => ParseInt(s)),
+                        CastHalfAngles = ParseList(cells[14], s => ParseFloat(s)),
                         ChannelTickIntervalMs = ParseInt(cells[15]),
                     };
                     _skillDict[data.Id] = data;
@@ -729,7 +729,7 @@ public class SpecDataManager
                         Id = ParseInt(cells[0]),
                         SkillType = ParseEnum<SkillType>(cells[1]),
                         MaxChannelMs = ParseInt(cells[2]),
-                        CastHalfAngles = cells[3],
+                        CastHalfAngles = ParseList(cells[3], s => ParseFloat(s)),
                         ChannelTickIntervalMs = ParseInt(cells[4]),
                     };
                     _skillChannelDict[data.Id] = data;
@@ -1240,5 +1240,19 @@ public class SpecDataManager
     {
         if (string.IsNullOrEmpty(s)) return default(T);
         return (T)Enum.Parse(typeof(T), s, true);
+    }
+    static List<T> ParseList<T>(string s, System.Func<string, T> parse)
+    {
+        var result = new List<T>();
+        if (string.IsNullOrEmpty(s)) return result;
+        string trimmed = s.Trim();
+        if (trimmed.Length > 1 && trimmed[0] == '{' && trimmed[trimmed.Length - 1] == '}')
+            trimmed = trimmed.Substring(1, trimmed.Length - 2);
+        foreach (var part in trimmed.Split(','))
+        {
+            string t = part.Trim();
+            if (!string.IsNullOrEmpty(t)) result.Add(parse(t));
+        }
+        return result;
     }
 }

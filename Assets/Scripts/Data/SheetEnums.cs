@@ -50,6 +50,13 @@ public enum EquipmentSlotType
     Boots,
 }
 
+public enum PlayerJobType
+{
+    None = 0,
+    Warrior,
+    Mage,
+}
+
 public enum ConsumableType
 {
     None = 0,
@@ -84,12 +91,6 @@ public enum MonsterType
 {
     None = 0,
     Bear,
-}
-
-public enum PlayerJobType
-{
-    None = 0,
-    Warrior,
 }
 
 public enum JobMainDamageType
@@ -134,6 +135,13 @@ public enum SkillActivationType
     None = 0,
     Instant,
     Channeling,
+}
+
+public enum CastDirectionType
+{
+    None = 0,
+    Front,
+    Sphere,
 }
 
 public enum SkillTargetingType

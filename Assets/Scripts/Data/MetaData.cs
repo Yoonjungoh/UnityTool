@@ -3,6 +3,7 @@
 // Do NOT edit manually — 컬럼 구조 변경 시 툴을 재실행하세요.
 // ============================================================
 using System;
+using System.Collections.Generic;
 
 // 모든 MetaData 클래스는 이 파일에서 통합 관리합니다.
 // 컬럼 구조가 바뀌면 에디터 툴을 재실행하세요.
@@ -41,7 +42,7 @@ public class EquipmentMetaData
     public int RequiredDEX;
     public int RequiredINT;
     public int RequiredLUK;
-    public string RequiredPlayerJob;
+    public List<PlayerJobType> RequiredPlayerJob;
     public int PhysicalDamage;
     public int MagicDamage;
     public int Defense;
@@ -62,7 +63,7 @@ public class ConsumableMetaData
     public int RequiredDEX;
     public int RequiredINT;
     public int RequiredLUK;
-    public string RequiredPlayerJob;
+    public List<PlayerJobType> RequiredPlayerJob;
     public int EffectValue;
     public float Duration;
     public float CoolTime;
@@ -86,9 +87,9 @@ public class QuestDefinitionMetaData
     public string Title;
     public int ReqLevel;
     public int PrereqQuestId;
-    public string RewardIdList;
-    public string RewardAmountList;
-    public string NextQuestIdList;
+    public List<int> RewardIdList;
+    public List<int> RewardAmountList;
+    public List<int> NextQuestIdList;
     public string Description;
 }
 
@@ -102,8 +103,8 @@ public class QuestObjectiveDefinitionMetaData
     public QuestObjectiveType QuestObjectiveType;
     public int TargetId;
     public int RequiredCount;
-    public string RewardIdList;
-    public string RewardAmountList;
+    public List<int> RewardIdList;
+    public List<int> RewardAmountList;
     public string Description;
 }
 
@@ -196,16 +197,16 @@ public class SkillMetaData
     public string Name;
     public SkillCategoryType SkillCategoryType;
     public SkillActivationType SkillActivationType;
-    public string CastDirections;
+    public List<CastDirectionType> CastDirections;
     public float CastRange;
     public SkillTargetingType TargetingType;
     public int MaxTargets;
     public int RequiredLevel;
-    public string RequiredJobs;
+    public List<PlayerJobType> RequiredJobs;
     public float CoolTime;
     public float CastTime;
-    public string SkillActionIds;
-    public string CastHalfAngles;
+    public List<int> SkillActionIds;
+    public List<float> CastHalfAngles;
     public int ChannelTickIntervalMs;
 }
 
@@ -216,7 +217,7 @@ public class SkillChannelMetaData
     public int Id;
     public SkillType SkillType;
     public int MaxChannelMs;
-    public string CastHalfAngles;
+    public List<float> CastHalfAngles;
     public int ChannelTickIntervalMs;
 }
 
